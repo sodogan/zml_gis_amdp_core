@@ -1,0 +1,107 @@
+*"* use this source file for your ABAP unit test classes
+*/**TESTING THE AMDP METHODS*/
+*"* use this source file for the definition and implementation of
+*"* local helper classes, interface definitions and type
+*"* declarations
+
+CLASS ltcl_tester DEFINITION FOR TESTING
+ INHERITING FROM zcl_gis_amdp_base_aunit
+  RISK LEVEL HARMLESS.
+
+  PUBLIC SECTION.
+    METHODS: create_expectations  REDEFINITION.
+    METHODS: clear_expectations REDEFINITION.
+
+  PROTECTED SECTION.
+
+
+  PRIVATE SECTION.
+    METHODS  model_compartment_up FOR TESTING RAISING cx_static_check.
+    METHODS:setup, teardown.
+    Class-METHODS:class_setup,class_teardown.
+    DATA: mo_cut TYPE REF TO zcl_gis_amdp_id1036.
+    class-DATA: mref_mock_helper type REF TO lcl_mock_helper.
+ENDCLASS.
+
+
+CLASS ltcl_tester IMPLEMENTATION.
+*******************************************************************************
+** Please be aware that this method contains DB Manipulation(Insert/Delete)!
+*******************************************************************************
+  METHOD model_compartment_up.
+    DATA: lt_actual_treespeciesitems TYPE ziidtid1036_model_compar_tab1,
+          lt_in_treespeciesitems     TYPE ziidtid1036_model_compart_tab.
+
+    TRY.
+        lt_in_treespeciesitems  = VALUE #(
+        ( treespecies = |2| value = |12| valuename = |JAREYS| valuetype = |int| )
+
+        ).
+
+
+** Turn on the commit on
+        toggle_commit_on(  ).
+
+        mo_cut->modelcompartmentup(
+          EXPORTING
+            in_workingsiteid     = |1|
+            in_logy              = |168|
+            in_treespeciesitems  = lt_in_treespeciesitems
+          IMPORTING
+            out_workingsiteid    = DATA(lv_out_workingsiteid)
+            out_logy             = DATA(lv_out_logy)
+            out_treespeciesitems = lt_actual_treespeciesitems
+        ).
+
+*Commit the changes
+        commit_work(  ).
+
+*The data should be matching
+        assert_equals( act = lv_out_workingsiteid exp = |1| msg = 'Working site id  should match' ).
+        assert_equals( act = lv_out_logy exp = |168| msg = 'Logy code should match' ).
+
+**Make sure that it contains the data right!
+        DATA(ls_line) =  VALUE ziidtid1036_model_compartmen1( mref_mock_helper->mt_mock_treespeciesitems[ treespecies = |2| ] ).
+        cl_abap_unit_assert=>assert_table_contains( table = lt_actual_treespeciesitems line = ls_line msg = | Should pass| ).
+
+
+** Turn on the commit off
+        toggle_commit_off(  ).
+      CATCH cx_root INTO DATA(lo_exception).
+        fail_exception( io_exception = lo_exception ).
+    ENDTRY.
+  ENDMETHOD.
+
+
+  METHOD setup.
+    TRY.
+        mo_cut =  CAST zcl_gis_amdp_id1036( zcl_gis_amdp_base=>get_instance( iv_id = '1036'  ) ).
+*load the expectations
+        create_expectations(  ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        cl_abap_unit_assert=>fail( 'Set up  has failed' ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD teardown.
+    clear_expectations(  ).
+  ENDMETHOD.
+
+  METHOD clear_expectations.
+    mref_mock_helper->clear(  ).
+  ENDMETHOD.
+
+  METHOD create_expectations.
+**Done at the local mock helper class
+  ENDMETHOD.
+
+  METHOD class_setup.
+   mref_mock_helper = new #(  ).
+  ENDMETHOD.
+
+  METHOD class_teardown.
+   clear: mref_mock_helper.
+  ENDMETHOD.
+
+ENDCLASS.

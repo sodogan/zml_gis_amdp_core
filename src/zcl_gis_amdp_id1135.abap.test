@@ -1,0 +1,102 @@
+*"* use this source file for your ABAP unit test classes
+*/**TESTING THE AMDP METHODS*/
+CLASS ltcl_tester DEFINITION FOR TESTING
+ INHERITING FROM zcl_gis_amdp_base_aunit
+  RISK LEVEL HARMLESS.
+
+
+  PUBLIC SECTION.
+    METHODS: create_expectations  REDEFINITION.
+    METHODS: clear_expectations REDEFINITION.
+
+  PROTECTED SECTION.
+
+  PRIVATE SECTION.
+    METHODS  gdpr_delete_gisdata FOR TESTING RAISING cx_static_check.
+    METHODS:setup, teardown.
+    DATA: mo_cut TYPE REF TO zcl_gis_amdp_id1135.
+ENDCLASS.
+
+
+CLASS ltcl_tester IMPLEMENTATION.
+
+*****************************************************************************************
+** Contains DB Manipulations (Delete) BE Aware!
+****************************************************************************************
+  METHOD gdpr_delete_gisdata.
+    DATA: lt_actual_contracts           TYPE zprcodt_id1135_gdpr_dele_tab8,
+          lt_actual_draftoffers         TYPE zprcodt_id1135_gdpr_dele_tab6,
+          lt_actual_offers              TYPE zprcodt_id1135_gdpr_dele_tab2,
+          lt_actual_silviculturalorders TYPE zprcodt_id1135_gdpr_delet_tab
+          .
+    TRY.
+
+** Turn on the commit on
+        toggle_commit_on(  ).
+
+        mo_cut->gdpr_delete_gisdata(
+          EXPORTING
+            key                       = |123|
+            user                      = |SODOGAN|
+            in_customer               = '607986'
+            in_contracts_tt           = VALUE #( ( contractid = '6982170621'  decade = '1') )
+            in_draftoffers_tt         = VALUE #( ( draftoffer = '123' ) )
+            in_offers_tt              = VALUE #( ( offerid = '234' ) )
+            in_silviculturalorders_tt = VALUE #( ( silviculturalorder = '323232' ) )
+          IMPORTING
+            out_customer              = DATA(customer)
+            out_status                = DATA(status)
+            out_contracts             = lt_actual_contracts
+            out_draftoffers           = lt_actual_draftoffers
+            out_offers                = lt_actual_offers
+            out_silviculturalorders   = lt_actual_silviculturalorders
+        ).
+*Make sure that we commit
+       commit_work(  ).
+
+
+** Turn on the commit off
+        toggle_commit_off(  ).
+
+**Make sure that data is returned back
+        DATA(lv_has_records) = check_table_has_records( it_table = lt_actual_silviculturalorders ).
+        assert_true( act = lv_has_records ).
+
+        DATA(lv_customer_match) = xsdbool( customer EQ '607986' ).
+        assert_true( act = lv_customer_match ).
+
+        lv_has_records = check_table_has_records( it_table = lt_actual_contracts ).
+        assert_true( act = lv_has_records ).
+
+**Make sure that it contains the data right!
+*        DATA(ls_line) =  VALUE #( mt_mock_stands_table[ stand_number = 22370496 ] ).
+*       cl_abap_unit_assert=>assert_table_contains( table = lt_actual_stands line = ls_line msg = | Should pass| ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        fail_test( |Exception: { lo_exception->get_text(  ) }  | ).
+    ENDTRY.
+  ENDMETHOD.
+
+
+  METHOD setup.
+    TRY.
+        mo_cut =  CAST zcl_gis_amdp_id1135( zcl_gis_amdp_base=>get_instance( iv_id = '1135'  ) ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        cl_abap_unit_assert=>fail( 'Set up  has failed' ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD teardown.
+    CLEAR: mo_cut.
+  ENDMETHOD.
+
+  METHOD clear_expectations.
+
+  ENDMETHOD.
+
+  METHOD create_expectations.
+
+  ENDMETHOD.
+
+ENDCLASS.

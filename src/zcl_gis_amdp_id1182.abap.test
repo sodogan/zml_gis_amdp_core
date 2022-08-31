@@ -1,0 +1,110 @@
+*"* use this source file for your ABAP unit test classes
+*/**TESTING THE AMDP METHODS*/
+CLASS ltcl_tester DEFINITION FOR TESTING
+ INHERITING FROM zcl_gis_amdp_base_aunit
+  CREATE PROTECTED
+  RISK LEVEL HARMLESS DURATION MEDIUM.
+
+  PUBLIC SECTION.
+    METHODS: create_expectations  REDEFINITION.
+    METHODS: clear_expectations REDEFINITION.
+
+  PROTECTED SECTION.
+
+  PRIVATE SECTION.
+
+    METHODS  get_map_symbol_modif FOR TESTING RAISING cx_static_check.
+    METHODS:setup, teardown.
+    DATA: mo_cut TYPE REF TO zcl_gis_amdp_id1182.
+    DATA: mt_mock_contracts  TYPE zprdtid1182_gisget_map_sy_tab.
+ENDCLASS.
+
+
+CLASS ltcl_tester IMPLEMENTATION.
+
+
+*******************************************************************************
+** Basic Test without DB Manipulation(Insert/Delete)!
+*******************************************************************************
+  METHOD get_map_symbol_modif.
+    DATA: lt_actual_contracts  TYPE zprdtid1182_gisget_map_sy_tab.
+    TRY.
+
+        GET TIME STAMP FIELD DATA(lv_start_timestamp).
+        GET TIME STAMP FIELD DATA(lv_end_timestamp).
+
+        lv_start_timestamp =  |20190708054349|.
+        lv_end_timestamp   =  |20190808054349|.
+        DATA(lv_start_time)  = |{ lv_start_timestamp TIMESTAMP =  ISO } | .
+        DATA(lv_end_time)  = |{ lv_end_timestamp TIMESTAMP =  ISO } | .
+
+        mo_cut->get_map_symbol_modif(
+          EXPORTING
+            in_starttime  = lv_start_time
+            in_endtime    = lv_end_time
+          IMPORTING
+            out_starttime = DATA(lv_actual_out_starttime)
+            out_endtime   = DATA(lv_actual_out_endtime)
+            contracts     = lt_actual_contracts
+        ).
+*
+***Make sure that it contains the data right!
+        assert_equals(
+          EXPORTING
+            exp = |2019-07-08T05:43:49 |
+            act = lv_actual_out_starttime
+            msg = |The Start times should match as expected|
+        ).
+
+        assert_equals(
+          EXPORTING
+            exp = |2019-08-08T05:43:49 |
+            act = lv_actual_out_endtime
+            msg = |The End times should match as expected|
+        ).
+
+
+**Make sure that data is returned back
+        assert_true( act = check_table_has_records( it_table = lt_actual_contracts ) ).
+
+**Make sure that it contains the data right!
+        DATA(ls_line) =  VALUE #( mt_mock_contracts[ contractid = 588117094 ] ).
+       cl_abap_unit_assert=>assert_table_contains( table = lt_actual_contracts line = ls_line msg = | Should pass| ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        fail_exception( io_exception = lo_exception ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD setup.
+    TRY.
+        mo_cut =  CAST zcl_gis_amdp_id1182( zcl_gis_amdp_base=>get_instance( iv_id = '1182'  ) ).
+
+        create_expectations( ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        cl_abap_unit_assert=>fail( 'Set up  has failed' ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD teardown.
+    CLEAR: mo_cut.
+    clear_expectations(  ).
+  ENDMETHOD.
+
+  METHOD clear_expectations.
+   clear: mt_mock_contracts.
+  ENDMETHOD.
+
+  METHOD create_expectations.
+  mt_mock_contracts = value #(
+  ( contractid = 588117094    decade = 1 )
+  ( contractid = 989119104    decade = 1 )
+  ( contractid = 614119054    decade = 1 )
+  ( contractid = 408119073   decade = 1 )
+
+  ).
+  ENDMETHOD.
+
+
+ENDCLASS.

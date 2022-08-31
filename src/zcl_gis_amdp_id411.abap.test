@@ -1,0 +1,191 @@
+*"* use this source file for your ABAP unit test classes
+*/**TESTING THE AMDP METHODS*/
+CLASS ltcl_tester DEFINITION FOR TESTING
+ INHERITING FROM zcl_gis_amdp_base_aunit
+  CREATE PROTECTED
+  RISK LEVEL HARMLESS.
+
+  PUBLIC SECTION.
+    METHODS: create_expectations  REDEFINITION.
+    METHODS: clear_expectations REDEFINITION.
+
+  PROTECTED SECTION.
+
+  PRIVATE SECTION.
+
+    METHODS  distance_message_send_euref FOR TESTING RAISING cx_static_check.
+    METHODS  distance_message_result_euref FOR TESTING RAISING cx_static_check.
+** Test with coordinate system KKJ(Finnish Standard) thows spatial error!
+** As agreed KKJ is removed from the DB and no need to test this case any more
+*    METHODS  distance_message_send_kkj FOR TESTING RAISING cx_static_check.
+    METHODS:setup, teardown.
+    DATA: mo_cut TYPE REF TO zcl_gis_amdp_id411.
+    DATA: mt_mock_routes_send  TYPE zprroadstorage_route_resp_tab.
+    DATA: mt_mock_routes_result  TYPE zprroadstorage_route_resp_tab.
+ENDCLASS.
+
+
+CLASS ltcl_tester IMPLEMENTATION.
+
+
+*******************************************************************************
+** Basic Test without DB Manipulation(Insert/Delete)!
+*******************************************************************************
+  METHOD distance_message_send_euref.
+    TRY.
+        DATA: lt_actual_routes  TYPE zprroadstorage_route_resp_tab.
+        DATA(lt_in_routes) = VALUE zprroadstorage_route_requ_tab(
+        ( contract = |2511151521|
+          storage_type = |TOIMITUSVARASTO|
+          storage_id = |J2930002|
+          decade = 1
+          storage_number = 1
+          coordinate_system = |EUREF| )
+        ).
+
+
+        mo_cut->distance_message_send(
+          EXPORTING
+            in_routes  = lt_in_routes
+          IMPORTING
+            out_routes = lt_actual_routes
+        ).
+
+        mo_cut->distance_message_result(
+          EXPORTING
+            staging_routes = lt_actual_routes
+          IMPORTING
+            out_routes     = DATA(lt_actual_out_routes)
+        ).
+
+
+
+**Make sure that it contains the data right!
+        DATA(ls_line) =  VALUE #( mt_mock_routes_send[ contract = |2511151521| ] ).
+        cl_abap_unit_assert=>assert_table_contains( table = lt_actual_routes line = ls_line msg = | Data should match | ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        fail_exception( io_exception = lo_exception ).
+    ENDTRY.
+  ENDMETHOD.
+
+*******************************************************************************
+** Basic Test without DB Manipulation(Insert/Delete)!
+**  until REST API call is not implemented, for test you can mock up distance and time by any decimal value.
+*******************************************************************************
+  METHOD distance_message_result_euref.
+    TRY.
+        DATA(lt_in_routes) = VALUE zprroadstorage_route_requ_tab( ).
+
+        DATA(lt_staging_routes) = VALUE zprroadstorage_route_resp_tab( (  contract = |2511151521| decade = 1
+                                 storage_number = 1
+                                 storage_id = |J2930002|
+                                 storage_type = |TOIMITUSVARASTO|
+                                 distance = 100
+                                 time = 12
+                                 endpoint = |202079 6788733| )  ).
+
+
+        mo_cut->distance_message_result(
+          EXPORTING
+            staging_routes = lt_staging_routes
+          IMPORTING
+            out_routes     = DATA(lt_actual_routes)
+        ).
+
+
+**Make sure that it contains the data right!
+        DATA(ls_line) =  VALUE #( mt_mock_routes_result[ contract = |2511151521| ] ).
+        cl_abap_unit_assert=>assert_table_contains( table = lt_actual_routes line = ls_line msg = | Data should match | ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        fail_exception( io_exception = lo_exception ).
+    ENDTRY.
+
+  ENDMETHOD.
+
+*******************************************************************************
+** Test with coordinate system KKJ(Finnish Standard) is removed and no longer valid!
+** For more details please see the JIRA story-No need to test
+********************************************************************************
+*  METHOD distance_message_send_kkj.
+*    TRY.
+*        DATA: lt_actual_routes  TYPE zprroadstorage_route_resp_tab.
+*        DATA(lt_in_routes) = VALUE zprroadstorage_route_requ_tab( ( coordinate_system = |KKJ| ) ).
+*
+*
+*        mo_cut->distance_message_send(
+*          EXPORTING
+*            in_routes  = lt_in_routes
+*          IMPORTING
+*            out_routes = lt_actual_routes
+*        ).
+*
+***SQLScript is not implemented yet so we set the mode to failure
+*        fail_test(
+*          EXPORTING
+*            iv_msg   = |SQLSCript is not implemented yet!|
+*            iv_level = cl_aunit_assert=>if_aunit_constants~critical
+*            iv_flow  = cl_aunit_assert=>if_aunit_constants~method
+*        ).
+*
+*
+***Make sure that it contains the data right!
+**        DATA(ls_line) =  VALUE #( mt_mock_routes[ contractid = 22370496 ] ).
+**        cl_abap_unit_assert=>assert_table_contains( table = lt_actual_routes line = ls_line msg = | Data should match | ).
+**
+*      CATCH cx_root INTO DATA(lo_exception).
+*        fail_exception( io_exception = lo_exception ).
+*    ENDTRY.
+*  ENDMETHOD.
+
+
+
+  METHOD setup.
+    TRY.
+        mo_cut =  CAST zcl_gis_amdp_id411( zcl_gis_amdp_base=>get_instance( iv_id = '411'  ) ).
+
+        create_expectations( ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        cl_abap_unit_assert=>fail( 'Set up  has failed' ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD teardown.
+    CLEAR: mo_cut.
+    CALL METHOD clear_expectations( ).
+  ENDMETHOD.
+
+
+
+  METHOD clear_expectations.
+    CLEAR: mt_mock_routes_send.
+    CLEAR: mt_mock_routes_result.
+  ENDMETHOD.
+
+  METHOD create_expectations.
+    mt_mock_routes_send = VALUE #( (  contract = |2511151521|
+                                 decade = 1
+                                 storage_number = 1
+                                 storage_id = |J2930002|
+                                 storage_type = |TOIMITUSVARASTO|
+                                 distance = 0
+                                 time = 0
+                                 endpoint = |202079 6788733| )  ).
+
+    mt_mock_routes_result = VALUE #( (  contract = |2511151521|
+                                 decade = 1
+                                 storage_number = 1
+                                 storage_id = |J2930002|
+                                 storage_type = |TOIMITUSVARASTO|
+                                 distance = 100
+                                 time = 12
+                                 logyid = |0000000154|
+                                 piiriid = |11|
+                                 metlaid = |01|
+                                 endpoint = |202079 6788733| )  ).
+  ENDMETHOD.
+
+
+ENDCLASS.

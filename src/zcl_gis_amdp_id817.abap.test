@@ -1,0 +1,104 @@
+*"* use this source file for your ABAP unit test classes
+*/**TESTING THE AMDP METHODS*/
+CLASS ltcl_tester DEFINITION FOR TESTING
+ INHERITING FROM zcl_gis_amdp_base_aunit
+  RISK LEVEL HARMLESS DURATION MEDIUM.
+
+  PUBLIC SECTION.
+    METHODS: create_expectations  REDEFINITION.
+    METHODS: clear_expectations REDEFINITION.
+
+  PROTECTED SECTION.
+
+
+  PRIVATE SECTION.
+    METHODS  saveworkingsitesampleplot FOR TESTING RAISING cx_static_check.
+    METHODS: setup, teardown.
+    DATA: mo_cut TYPE REF TO zcl_gis_amdp_id817.
+ENDCLASS.
+
+
+CLASS ltcl_tester IMPLEMENTATION.
+
+
+*******************************************************************************
+** Please be aware that this method contains DB Manipulation(Insert/Delete)!
+*******************************************************************************
+  METHOD saveworkingsitesampleplot.
+    DATA: lt_sampleplots     TYPE ziidt_id817_qc_gis_save__tab1,
+          lt_hoppers         TYPE ziidt_id817_qc_gis_save__tab2.
+
+    TRY.
+
+    lt_sampleplots = Value #( (  standnumber = 1
+                                 geometryreal = '240377.48953756283 6820333.000411826'
+                                 geometryhaukka = '240377.48953756283 6820333.000411826'
+                                 geometryrequired = '240377.48953756283 6820333.000411826'   ) ).
+
+
+
+    lt_hoppers = VALUE #( ( id = 123
+                            hoppertype = 1
+                            standnumber = 1
+                            infotext = 'A  test'
+                            sampleplotnumber = '1'
+                            volume = 123
+                            geometry = '240377.48953756283 6820333.000411826'
+                              ) ).
+
+** Turn on the commit on
+        toggle_commit_on(  ).
+
+         mo_cut->saveworkingsitesampleplot(
+           EXPORTING
+            contractid  = |434538161|
+            decade      = '1'
+            blocknumber = 1
+            resourceid  = '12345'
+            sampleplots = lt_sampleplots
+            hoppers     = lt_hoppers
+         ).
+
+        commit_work(  ).
+
+**Make sure that it contains the data right!
+*        DATA(ls_line) =  VALUE #( mt_mock_stands_table[ stand_number = 22370496 ] ).
+*       cl_abap_unit_assert=>assert_table_contains( table = lt_actual_stands line = ls_line msg = | Should pass| ).
+
+** Turn on the commit off
+        toggle_commit_off(  ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+       rollback work.
+       fail_exception(
+         EXPORTING
+           io_exception = lo_exception
+       ).
+
+    ENDTRY.
+  ENDMETHOD.
+
+
+
+  METHOD setup.
+    TRY.
+        mo_cut =  CAST zcl_gis_amdp_id817( zcl_gis_amdp_base=>get_instance( iv_id = '817'  ) ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        cl_abap_unit_assert=>fail( 'Set up  has failed' ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD teardown.
+    CLEAR: mo_cut.
+  ENDMETHOD.
+
+  METHOD clear_expectations.
+
+  ENDMETHOD.
+
+  METHOD create_expectations.
+
+  ENDMETHOD.
+
+ENDCLASS.

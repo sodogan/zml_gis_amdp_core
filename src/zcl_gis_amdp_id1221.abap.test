@@ -1,0 +1,291 @@
+*"* use this source file for your ABAP unit test classes
+*/**TESTING THE AMDP METHODS*/
+CLASS ltcl_tester DEFINITION FOR TESTING
+ INHERITING FROM zcl_gis_amdp_base_aunit
+  RISK LEVEL HARMLESS DURATION LONG.
+
+
+  PUBLIC SECTION.
+    METHODS: create_expectations  REDEFINITION.
+    METHODS: clear_expectations REDEFINITION.
+
+  PROTECTED SECTION.
+
+
+  PRIVATE SECTION.
+    METHODS  call_id1221 FOR TESTING RAISING cx_static_check.
+    METHODS  call_id1221_wrong FOR TESTING RAISING cx_static_check.
+    METHODS  save_resource_location_right FOR TESTING RAISING cx_static_check.
+    METHODS  save_resource_location_nogeom FOR TESTING RAISING cx_static_check.
+    METHODS  save_resource_location_nostamp FOR TESTING RAISING cx_static_check.
+    METHODS  save_resource_location_wrong FOR TESTING RAISING cx_static_check.
+    METHODS: transform_geotimestamp IMPORTING geo_timestamp            TYPE string
+                                    RETURNING VALUE(geo_timestamp_ret) TYPE string.
+    METHODS:setup, teardown.
+    DATA: mo_cut TYPE REF TO zcl_gis_amdp_id1221.
+ENDCLASS.
+
+
+CLASS ltcl_tester IMPLEMENTATION.
+
+
+  METHOD call_id1221.
+ DATA: lt_resourceloc_request_tt TYPE ziidt_id1221_gis_resloc_tab,
+          lt_actual_resource_loc    TYPE ziidt_id1221_gis_response_tab
+          .
+    TRY.
+
+        GET TIME STAMP FIELD DATA(lv_geotimestamp).
+
+        lv_geotimestamp =  |20190708054349|.
+         DATA(lv_geotimestamp_str)  = |{ lv_geotimestamp TIMESTAMP =  ISO } | .
+
+
+*<GeometryTimestamp>2019-07-08T05:43:49.556Z</GeometryTimestamp>
+
+        lt_resourceloc_request_tt = VALUE #(
+        ( contract_id = |4791190181|  decade = 1 resource_id = |28482446|  block_num = '1'  geometry =  '240377.48953756283 6820333.000411826'  geotimestamp = lv_geotimestamp_str )
+        ).
+** Turn on the commit on
+        toggle_commit_on(  ).
+
+
+        mo_cut->call_id1221(
+          EXPORTING
+            resourceloc_request_tt = lt_resourceloc_request_tt
+            iref_log_wrapper       = new zcl_application_log_wrapper( object = 'ZGIS_RESPONSE_ID1221'  )
+        ).
+
+* if reaches here it means it has passed!
+        assert_true( act = abap_true ).
+
+** Turn off the commit on
+        toggle_commit_off(  ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        ROLLBACK WORK.
+        fail_exception( io_exception = lo_exception ).
+    ENDTRY.
+  ENDMETHOD.
+   METHOD call_id1221_wrong.
+ DATA: lt_resourceloc_request_tt TYPE ziidt_id1221_gis_resloc_tab,
+          lt_actual_resource_loc    TYPE ziidt_id1221_gis_response_tab
+          .
+    TRY.
+
+        GET TIME STAMP FIELD DATA(lv_geotimestamp).
+
+        lv_geotimestamp =  |20190708054349|.
+        DATA(lv_timestamp_str)  = |{ lv_geotimestamp TIMESTAMP =  ISO } | .
+
+**Convert the format for HANA
+*Should return like   |2019-07-08 05:43:50.123|.
+        DATA(lv_geotimestamp_str) = zcl_gis_abap_trigger_utility=>transform_timestamp_forhana( geo_timestamp = lv_timestamp_str ).
+
+*<GeometryTimestamp>2019-07-08T05:43:49.556Z</GeometryTimestamp>
+
+        lt_resourceloc_request_tt = VALUE #(
+        ( contract_id = |4791190181|  decade = 1 resource_id = |28482446|  block_num = '1'  geometry =  '240377.48953756283 6820333.000411826'  geotimestamp = lv_geotimestamp_str )
+        ).
+** Turn on the commit on
+        toggle_commit_on(  ).
+
+
+        mo_cut->call_id1221(
+          EXPORTING
+            resourceloc_request_tt = lt_resourceloc_request_tt
+            iref_log_wrapper       = new zcl_application_log_wrapper( object = 'ZGIS_RESPONSE_ID1221'  )
+        ).
+
+* if reaches here it means it has passed!
+        assert_true( act = abap_true ).
+
+** Turn off the commit on
+        toggle_commit_off(  ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        ROLLBACK WORK.
+        fail_exception( io_exception = lo_exception ).
+    ENDTRY.
+  ENDMETHOD.
+****************************************************************************************
+* This method contains Manipulation operations on DB(Insert,update) Be Aware
+* Timestamp needs to be converted for HANA in ISO standard
+* DATA(lv_geotimestamp_str) = |{ lv_geotimestamp TIMESTAMP = ISO } |.
+****************************************************************************************
+  METHOD save_resource_location_right.
+    DATA: lt_resourceloc_request_tt TYPE ziidt_id1221_gis_resloc_tab,
+          lt_actual_resource_loc    TYPE ziidt_id1221_gis_response_tab
+          .
+    TRY.
+
+        GET TIME STAMP FIELD DATA(lv_geotimestamp).
+
+        lv_geotimestamp =  |20190708054349|.
+        DATA(lv_timestamp_str)  = |{ lv_geotimestamp TIMESTAMP =  ISO } | .
+
+**Convert the format for HANA
+*Should return like   |2019-07-08 05:43:50.123|.
+        DATA(lv_geotimestamp_str) = zcl_gis_abap_trigger_utility=>transform_timestamp_forhana( geo_timestamp = lv_timestamp_str ).
+
+*<GeometryTimestamp>2019-07-08T05:43:49.556Z</GeometryTimestamp>
+
+        lt_resourceloc_request_tt = VALUE #(
+        ( contract_id = |4791190181|  decade = 1 resource_id = |28482446|  block_num = '1'  geometry =  '240377.48953756283 6820333.000411826'  geotimestamp = lv_geotimestamp_str )
+        ).
+** Turn on the commit on
+        toggle_commit_on(  ).
+
+        mo_cut->save_resource_location( EXPORTING resourceloc_request_tt = lt_resourceloc_request_tt ).
+
+* if reaches here it means it has passed!
+        assert_true( act = abap_true ).
+
+** Turn off the commit on
+        toggle_commit_off(  ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        ROLLBACK WORK.
+        fail_exception( io_exception = lo_exception ).
+    ENDTRY.
+  ENDMETHOD.
+
+
+****************************************************************************************
+* This method contains Manipulation operations on DB(Insert,update) Be Aware
+* No geom is provided which means it will throw user defined exception with error message
+****************************************************************************************
+  METHOD save_resource_location_nogeom.
+    DATA: lt_actual_resource_loc TYPE ziidt_id1221_gis_response_tab
+          .
+    TRY.
+
+** Turn on the commit on
+        toggle_commit_on(  ).
+
+        mo_cut->save_resource_location(
+          EXPORTING
+            resourceloc_request_tt = VALUE #( ( contract_id = |4791190181| decade = 1 resource_id = |28482446| block_num = '1' ) )
+        ).
+
+**When there is  exception raised it should not reach here at all
+        fail_test( |It should not have reached here  | ).
+
+        toggle_commit_off(  ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        ROLLBACK WORK.
+
+        IF lo_exception IS INSTANCE OF cx_amdp_execution_error.
+          DATA(lo_amdp_exception) = CAST cx_amdp_execution_error( lo_exception ).
+          DATA(sql_code) = lo_amdp_exception->sql_code.
+*          assert_true( act = xsdbool( sql_code = '10001') msg = |Expected Exception is thrown| ).
+        ELSE.
+*          assert_false( act = abap_true msg = |Expected Exception is not thrown| ).
+        ENDIF.
+**This should raise exception and the error message should be filled
+
+
+    ENDTRY.
+  ENDMETHOD.
+************************************************************************************
+* This method contains Manipulation operations on DB(Insert,update) Be Aware
+* No timestamp is provided which means it will still work but with NULL
+************************************************************************************
+  METHOD save_resource_location_nostamp.
+    DATA: lt_actual_resource_loc TYPE ziidt_id1221_gis_response_tab
+          .
+    TRY.
+** Turn on the commit on
+        toggle_commit_on(  ).
+
+        mo_cut->save_resource_location( EXPORTING resourceloc_request_tt =  VALUE #( ( contract_id = |4791190181| geometry =  '240377.48953756283 6820333.000411826'  decade = 1 resource_id = |28482446|  block_num = '1' ) )
+         ).
+
+        assert_true( act = abap_true msg = |Expected to pass with no Geom| ).
+
+
+** Turn off the commit on
+        toggle_commit_off(  ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        ROLLBACK WORK.
+
+        fail_exception( io_exception = lo_exception ).
+    ENDTRY.
+  ENDMETHOD.
+
+
+
+  METHOD save_resource_location_wrong.
+    DATA: lt_resourceloc_request_tt TYPE ziidt_id1221_gis_resloc_tab,
+          lt_actual_resource_loc    TYPE ziidt_id1221_gis_response_tab
+          .
+    TRY.
+        DATA(lv_geotimestamp) = |2019-07-08T05:43:49.556Z|.
+
+        DATA(lv_geotimestamp_str) = transform_geotimestamp( geo_timestamp = lv_geotimestamp ).
+
+        lt_resourceloc_request_tt = VALUE #(
+        ( contract_id = |4791190181|  decade = 1 resource_id = |28482446|  block_num = '1'  geometry =  '240377.48953756283 6820333.000411826'  geotimestamp = lv_geotimestamp_str )
+        ).
+** Turn on the commit on
+        toggle_commit_on(  ).
+
+        mo_cut->save_resource_location( EXPORTING resourceloc_request_tt = lt_resourceloc_request_tt ).
+
+* if reaches here it means it has passed!
+        assert_true( act = abap_true ).
+
+** Turn off the commit on
+        toggle_commit_off(  ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        ROLLBACK WORK.
+        fail_exception(
+          EXPORTING
+            io_exception = lo_exception
+*           quit         = method
+        ).
+
+
+    ENDTRY.
+  ENDMETHOD.
+
+
+
+  METHOD setup.
+    TRY.
+        mo_cut =  CAST zcl_gis_amdp_id1221( zcl_gis_amdp_base=>get_instance( iv_id = '1221'  ) ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        cl_abap_unit_assert=>fail( 'Set up  has failed' ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD teardown.
+    CLEAR: mo_cut.
+  ENDMETHOD.
+
+  METHOD clear_expectations.
+
+  ENDMETHOD.
+
+  METHOD create_expectations.
+
+  ENDMETHOD.
+
+  METHOD transform_geotimestamp.
+    DATA(lv_last) = substring( val = geo_timestamp off = strlen( geo_timestamp ) - 1 len = 1 ).
+    IF lv_last CA 'Z'.
+      geo_timestamp_ret = substring( val = geo_timestamp off = 0 len = strlen( geo_timestamp ) - 2 ).
+    ENDIF.
+    FIND 'T' IN geo_timestamp_ret.
+    IF sy-subrc EQ 0.
+      REPLACE FIRST OCCURRENCE OF 'T' IN geo_timestamp_ret WITH ` `.
+    ENDIF.
+  ENDMETHOD.
+
+
+
+ENDCLASS.

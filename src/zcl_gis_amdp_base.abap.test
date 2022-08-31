@@ -1,0 +1,198 @@
+*"* use this source file for your ABAP unit test classes
+
+*/**TESTING THE AMDP METHODS*/
+CLASS ltcl_tester DEFINITION FOR TESTING
+ INHERITING FROM zcl_gis_amdp_base_aunit
+  RISK LEVEL HARMLESS DURATION SHORT.
+  PUBLIC SECTION.
+    METHODS: create_expectations REDEFINITION.
+    METHODS: clear_expectations REDEFINITION.
+
+  PROTECTED SECTION.
+    DATA: mt_mock_sampleplots_table TYPE zmgkotka_sampleplots_tt.
+    DATA: mt_mock_stands_table TYPE zmvk_stand_tt.
+    DATA: mt_mock_harvest_block_table TYPE zmgkotka_harvesting_tt.
+    DATA: mt_mock_planning_block_table TYPE zmgkotka_planningblock_tt.
+
+
+
+  PRIVATE SECTION.
+    METHODS findsampleplotswithstandid FOR TESTING RAISING cx_static_check.
+    METHODS get_mgkotka_sw_planningblock FOR TESTING RAISING cx_static_check.
+    METHODS get_mgkotka_harvesting_block FOR TESTING RAISING cx_static_check.
+    METHODS get_mvk_stand FOR TESTING RAISING cx_static_check.
+    METHODS get_mgkotka_storage FOR TESTING RAISING cx_static_check.
+    METHODS:setup, teardown.
+ENDCLASS.
+
+
+CLASS ltcl_tester IMPLEMENTATION.
+
+
+  METHOD setup.
+*generate the Mock Data
+    create_expectations(  ).
+  ENDMETHOD.
+
+  METHOD teardown.
+*Clear up the mock data
+    clear_expectations(  ).
+  ENDMETHOD.
+
+
+  METHOD create_expectations.
+
+*/**TODO: This is the place to generate sample data for the Test class in ZCL_GIS_BASE*/
+    clear_expectations( ).
+**For sampleplots table
+    INSERT VALUE zmgkotka_sampleplots_s( stand_number = 47711    test_area_number = 2  ) INTO TABLE mt_mock_sampleplots_table.
+
+*For Stands
+    INSERT VALUE zmvk_stand_s( stand_id = 22370496  fertility_class = '3'  development_class = '03' soil_type = '10' ) INTO TABLE mt_mock_stands_table.
+
+*For Harvesting Block
+    INSERT VALUE zmgkotka_harvesting_s( contractid = 1061170031 harvesting_blockid = 67799  blocknumber = 1 ) INTO TABLE mt_mock_harvest_block_table.
+
+*For PlanningBlock
+    INSERT VALUE zmgkotka_planningblock_s( contractid = 432856 planning_blockid   = 249373  blocknumber = 1 ) INTO TABLE mt_mock_planning_block_table.
+
+  ENDMETHOD.
+
+  METHOD clear_expectations.
+    CLEAR: mt_mock_sampleplots_table,
+           mt_mock_stands_table,
+           mt_mock_harvest_block_table,
+           mt_mock_planning_block_table
+     .
+
+
+  ENDMETHOD.
+
+
+
+  METHOD findsampleplotswithstandid.
+    DATA: lt_actual_sampleplots_table TYPE zmgkotka_sampleplots_tt.
+* fail_test( 'Always start with A Failure first!' ).
+
+** call
+    TRY.
+        zcl_gis_amdp_base=>findsampleplotswithstandid(
+          EXPORTING
+            stand_id                   = 47711
+            is_harvesting              = 'X'
+          IMPORTING
+            matching_sampleplots_table = lt_actual_sampleplots_table
+        ).
+
+**Make sure that data is returned back
+        DATA(lv_has_records) = check_table_has_records( it_table = lt_actual_sampleplots_table ).
+        assert_true( act = lv_has_records ).
+
+
+**Make sure that it contains the data right!
+*        DATA(ls_line) =  VALUE zmgkotka_sampleplots_s( mt_mock_sampleplots_table[ stand_id = 4711 ] OPTIONAL ).
+*        cl_abap_unit_assert=>assert_table_contains( table = lt_actual_sampleplots_table line = ls_line msg = | Should pass| ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        fail_test( |Exception: { lo_exception->get_text(  ) }  | ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD get_mgkotka_storage.
+*  fail_test( 'Always start with A Failure first!' ).
+
+** call
+    TRY.
+        zcl_gis_amdp_base=>findStoragesWithContractid(
+          EXPORTING
+            contractid    = 2511151521
+          IMPORTING
+            storage_table = DATA(lt_storage_table)
+        ).
+
+**Make sure that data is returned back
+        DATA(lv_has_records) = check_table_has_records( it_table = lt_storage_table ).
+        assert_true( act = lv_has_records ).
+
+**Make sure that it contains the data right!
+*      DATA(ls_line) =  VALUE zmgkotka_storage_s(  storage_number = 1 ).
+**    cl_abap_unit_assert=>assert_table_contains( table = lt_storage_table line = ls_line msg = | Should pass| ).
+      CATCH cx_root INTO DATA(lo_exception).
+        fail_test( |Exception: { lo_exception->get_text(  ) }  | ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD get_mvk_stand.
+* fail_test( 'Always start with A Failure first!' ).
+    DATA: lt_actual_stands TYPE zmvk_stand_tt.
+** call
+    TRY.
+        zcl_gis_amdp_base=>get_mvk_stand(
+          EXPORTING
+            stand_id    = 22370496
+          IMPORTING
+            stand_table = lt_actual_stands
+        ).
+
+**Make sure that data is returned back
+        DATA(lv_has_records) = check_table_has_records( it_table = lt_actual_stands ).
+        assert_true( act = lv_has_records ).
+
+**Make sure that it contains the data right!
+        DATA(ls_line) =  VALUE zmvk_stand_s( mt_mock_stands_table[ stand_id = 22370496 ] OPTIONAL ).
+        cl_abap_unit_assert=>assert_table_contains( table = lt_actual_stands line = ls_line msg = | Should pass| ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        fail_test( |Exception: { lo_exception->get_text(  ) }  | ).
+    ENDTRY.
+
+
+  ENDMETHOD.
+
+  METHOD get_mgkotka_harvesting_block.
+    DATA: lt_harvest_block_table TYPE zmgkotka_harvesting_tt.
+* fail_test( 'Always start with A Failure first!' ).
+
+** call
+    TRY.
+        zcl_gis_amdp_base=>get_mgkotka_harvesting_block(
+          EXPORTING
+            contractid          = mt_mock_harvest_block_table[ 1 ]-contractid
+            blocknumber         = 1
+          IMPORTING
+            harvest_block_table = lt_harvest_block_table
+        ).
+
+        DATA(ls_line) =  VALUE #( mt_mock_harvest_block_table[ 1 ] ).
+
+**Make sure that it contains the data right!
+        cl_abap_unit_assert=>assert_table_contains( table = lt_harvest_block_table line = ls_line msg = | Should pass| ).
+      CATCH cx_root INTO DATA(lo_exception).
+        fail_test( |Exception: { lo_exception->get_text(  ) }  | ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD get_mgkotka_sw_planningblock.
+    DATA: lt_actual_planning_table TYPE zmgkotka_planningblock_tt.
+
+** call
+    TRY.
+        zcl_gis_amdp_base=>get_mgkotka_sw_planningblock(
+          EXPORTING
+            contractid     = 432856
+            blocknumber    = 1
+          IMPORTING
+            planning_table = lt_actual_planning_table
+        ).
+
+        DATA(ls_line) =  VALUE #( mt_mock_planning_block_table[ 1 ] ).
+
+**Make sure that it contains the data right!
+        cl_abap_unit_assert=>assert_table_contains( table = lt_actual_planning_table line = ls_line msg = | Should pass| ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        fail_test( |Exception: { lo_exception->get_text(  ) }  | ).
+    ENDTRY.
+  ENDMETHOD.
+
+ENDCLASS.

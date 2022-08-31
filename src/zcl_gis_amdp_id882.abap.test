@@ -1,0 +1,79 @@
+*"* use this source file for your ABAP unit test classes
+*/**TESTING THE AMDP METHODS*/
+CLASS ltcl_tester DEFINITION FOR TESTING
+ INHERITING FROM zcl_gis_amdp_base_aunit
+  RISK LEVEL HARMLESS.
+
+  PUBLIC SECTION.
+    METHODS: create_expectations  REDEFINITION.
+    METHODS: clear_expectations REDEFINITION.
+
+    protected section.
+
+
+  PRIVATE SECTION.
+
+    METHODS MG0882_Rungonosa FOR TESTING RAISING cx_static_check.
+    METHODS:setup, teardown.
+    DATA: mo_cut TYPE REF TO zcl_gis_amdp_id882.
+    DATA: mt_expected_rungonosa_table  TYPE ziirungonosa_type_tab.
+ENDCLASS.
+
+
+CLASS ltcl_tester IMPLEMENTATION.
+
+
+
+  METHOD MG0882_Rungonosa.
+  DATA: lt_actual_rungonosa_table  TYPE ziirungonosa_type_tab.
+    TRY.
+        mo_cut->mg0882_rungonosa(
+          EXPORTING
+            logy             = '0000000602'
+            hinnoittelumuoto = '2'
+          IMPORTING
+            rungonosa_table  = lt_actual_rungonosa_table
+        ).
+
+
+
+**Make sure that data is returned back
+        DATA(lv_has_records) = check_table_has_records( it_table = lt_actual_rungonosa_table ).
+        assert_true( act = lv_has_records ).
+
+**Make sure that it contains the data right!
+        DATA(ls_line) =  VALUE #( mt_expected_rungonosa_table[ piiri = '13' ] ).
+        cl_abap_unit_assert=>assert_table_contains( table = lt_actual_rungonosa_table line = ls_line msg = | Should pass| ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        fail_test( |Exception: { lo_exception->get_text(  ) }  | ).
+    ENDTRY.
+  ENDMETHOD.
+
+
+  METHOD setup.
+    TRY.
+        mo_cut =  CAST zcl_gis_amdp_id882( zcl_gis_amdp_base=>get_instance( iv_id = '882'  ) ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        cl_abap_unit_assert=>fail( 'Set up  has failed' ).
+    ENDTRY.
+*generate the Mock Data
+    create_expectations(  ).
+  ENDMETHOD.
+
+  METHOD teardown.
+      CLEAR: mo_cut.
+  ENDMETHOD.
+
+  METHOD clear_expectations.
+   clear mt_expected_rungonosa_table.
+  ENDMETHOD.
+
+  METHOD create_expectations.
+
+   append VALUE   ziirungonosa_type( piiri = '13' puulaji = '1' koodi = '2' nimi = 'R250' minimi_lpm = '250.0000000000' minimi_pituus = '1.0000000000' puukauppa = abap_true ) to mt_expected_rungonosa_table.
+
+  ENDMETHOD.
+
+ENDCLASS.

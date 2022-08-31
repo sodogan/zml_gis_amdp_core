@@ -1,0 +1,91 @@
+*"* use this source file for your ABAP unit test classes
+*/**TESTING THE AMDP METHODS*/
+CLASS ltcl_tester DEFINITION FOR TESTING
+ INHERITING FROM zcl_gis_amdp_base_aunit
+  RISK LEVEL HARMLESS.
+
+  PUBLIC SECTION.
+    METHODS: create_expectations  REDEFINITION.
+    METHODS: clear_expectations REDEFINITION.
+
+  PROTECTED SECTION.
+
+  PRIVATE SECTION.
+    METHODS  get_pin_query FOR TESTING RAISING cx_static_check.
+    METHODS:setup, teardown.
+    DATA: mo_cut TYPE REF TO zcl_gis_amdp_id871.
+    DATA: mt_mock_pin_query_table  type zdt_pin_response_pin_tab.
+ENDCLASS.
+
+
+CLASS ltcl_tester IMPLEMENTATION.
+
+
+
+  METHOD get_pin_query.
+  DATA: lt_actual_pin_query_table  type zdt_pin_response_pin_tab.
+    TRY.
+        mo_cut->get_pin_query(
+          EXPORTING
+            compartment_id          = |1|
+            logistic_unit           = |23|
+            harvesting_method_group = |3|
+            assortments             = VALUE #(  ( assortment_code = 1 delivery_destination_code = 2 grade_code = 3   ) )
+          IMPORTING
+           pin_query_table         = lt_actual_pin_query_table
+        ).
+**Make sure that data is returned back
+        DATA(lv_has_records) = check_table_has_records( it_table = lt_actual_pin_query_table ).
+        assert_true( act = lv_has_records ).
+
+
+**Make sure that it contains the data right!
+        DATA(ls_actual_line) =  VALUE zdt_pin_response_pin( lt_actual_pin_query_table[ assortment_code = 994 ] OPTIONAL ).
+
+**get the line from the actual table
+        DATA(ls_expected_line) =  VALUE zdt_pin_response_pin( mt_mock_pin_query_table[ assortment_code = 994 ] OPTIONAL ).
+
+        assert_equals(
+          EXPORTING
+            exp                  = ls_expected_line
+            act                  = ls_actual_line
+            msg                  = |The data should match|
+
+        ).
+
+
+*       cl_abap_unit_assert=>assert_table_contains( table = lt_actual_pin_query_table line = ls_expected_line msg = | Should pass| ).
+
+
+
+      CATCH cx_root INTO DATA(lo_exception).
+        fail_test( |Exception: { lo_exception->get_text(  ) }  | ).
+
+    ENDTRY.
+  ENDMETHOD.
+
+
+
+  METHOD setup.
+    TRY.
+        mo_cut =  CAST zcl_gis_amdp_id871( zcl_gis_amdp_base=>get_instance( iv_id = '871'  ) ).
+      create_expectations( ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        cl_abap_unit_assert=>fail( 'Set up  has failed' ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD teardown.
+    CLEAR: mo_cut.
+  ENDMETHOD.
+
+  METHOD clear_expectations.
+  clear mt_mock_pin_query_table.
+  ENDMETHOD.
+
+  METHOD create_expectations.
+  insert VALUE #( assortment_code = '994' delivery_destination_code = '96011' grade_code = 'X' pin_file_name = 'MG_96011_994_L' modification_date = '20181115') INTO TABLE mt_mock_pin_query_table.
+  ENDMETHOD.
+
+ENDCLASS.

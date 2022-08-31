@@ -1,0 +1,196 @@
+*"* use this source file for your ABAP unit test classes
+*/**TESTING THE AMDP METHODS*/
+CLASS ltcl_tester DEFINITION FOR TESTING
+ INHERITING FROM zcl_gis_amdp_base_aunit
+  CREATE PROTECTED
+  RISK LEVEL HARMLESS.
+
+  PUBLIC SECTION.
+    METHODS: create_expectations  REDEFINITION.
+    METHODS: clear_expectations REDEFINITION.
+
+  PROTECTED SECTION.
+
+  PRIVATE SECTION.
+
+    METHODS  route_message_send_noid FOR TESTING RAISING cx_static_check.
+    METHODS  route_message_send_withid FOR TESTING RAISING cx_static_check.
+    METHODS  route_message_send_defect FOR TESTING RAISING cx_static_check.
+    METHODS: setup, teardown.
+    DATA: mo_cut TYPE REF TO zcl_gis_amdp_id211.
+    DATA:mt_mock_routes TYPE zprroutetype_tab.
+ENDCLASS.
+
+
+CLASS ltcl_tester IMPLEMENTATION.
+
+*******************************************************************************
+** Basic Test without DB Manipulation(Insert/Delete)!
+*******************************************************************************
+  METHOD route_message_send_defect.
+    TRY.
+        DATA(lt_actual_routes) = VALUE zprroutetype_tab( ).
+
+        mo_cut->route_message_send(
+          EXPORTING
+            in_originid                = |B3280001|
+            in_origintype              = |TERMINAALI|
+            in_originclass             = |1|
+            in_origin_maxdistance      = 80
+            in_destination_id          = |B5660001|
+            in_destination_type        = |TERMINAALI|
+            in_destination_class       = 1
+            in_destination_maxdistance = 80
+*            in_originid                = |B1320001|
+*            in_origintype              = |TERMINAALI|
+*            in_originclass             = |1|
+*            in_origin_maxdistance      = 9999999
+*            in_destination_id          = |96767|
+*            in_destination_type        = |TOIMITUSKOHDE|
+*            in_destination_class       = 1
+*            in_destination_maxdistance = 9999999
+          IMPORTING
+            routes                     = lt_actual_routes
+        ).
+
+*Make sure that data is returned back
+         assert_false( check_table_has_records( it_table = lt_actual_routes  ) ).
+
+**Make sure that it contains the data right!
+*        DATA(ls_line) =  VALUE #( mt_mock_routes[ originid  = |8051| ] ).
+*        cl_abap_unit_assert=>assert_table_contains( table = lt_actual_routes line = ls_line msg = | Data should match | ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        fail_exception( io_exception = lo_exception ).
+    ENDTRY.
+
+  ENDMETHOD.
+
+
+*******************************************************************************
+** Basic Test without DB Manipulation(Insert/Delete)!
+*******************************************************************************
+  METHOD route_message_send_noid.
+    TRY.
+        DATA(lt_actual_routes) = VALUE zprroutetype_tab( ).
+
+        mo_cut->route_message_send(
+          EXPORTING
+            in_originid                = ||
+            in_origintype              = |LOGY|
+            in_originclass             = |3|
+            in_origin_maxdistance      = 8000
+            in_destination_id          = |B0140001|
+            in_destination_type        = |TERMINAALI|
+            in_destination_class       = 1
+            in_destination_maxdistance = 8000
+          IMPORTING
+            routes                     = lt_actual_routes
+        ).
+
+*Make sure that data is returned back
+          assert_true( check_table_has_records( it_table = lt_actual_routes  ) ).
+
+**Make sure that it contains the data right!
+        DATA(ls_line) =  VALUE #( mt_mock_routes[ originid  = |8051| ] ).
+        cl_abap_unit_assert=>assert_table_contains( table = lt_actual_routes line = ls_line msg = | Data should match | ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        fail_exception( io_exception = lo_exception ).
+    ENDTRY.
+  ENDMETHOD.
+
+
+  METHOD route_message_send_withid.
+ TRY.
+        DATA(lt_actual_routes) = VALUE zprroutetype_tab( ).
+
+        mo_cut->route_message_send(
+          EXPORTING
+            in_originid                = |0000000610|
+            in_origintype              = |LOGY|
+            in_originclass             = |3|
+            in_origin_maxdistance      = 8000
+            in_destination_id          = |B0140001|
+            in_destination_type        = |TERMINAALI|
+            in_destination_class       = 1
+            in_destination_maxdistance = 8000
+          IMPORTING
+            routes                     = lt_actual_routes
+        ).
+
+*Make sure that data is returned back
+          assert_true( check_table_has_records( it_table = lt_actual_routes  ) ).
+
+**Make sure that it contains the data right!
+        DATA(ls_line) =  VALUE #( mt_mock_routes[ originid  = |5550| ] ).
+        cl_abap_unit_assert=>assert_table_contains( table = lt_actual_routes line = ls_line msg = | Data should match | ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        fail_exception( io_exception = lo_exception ).
+    ENDTRY.
+  ENDMETHOD.
+
+
+
+  METHOD setup.
+    TRY.
+        mo_cut =  CAST zcl_gis_amdp_id211( zcl_gis_amdp_base=>get_instance( iv_id = '211'  ) ).
+
+        create_expectations( ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        cl_abap_unit_assert=>fail( 'Set up  has failed' ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD teardown.
+    CLEAR: mo_cut.
+    clear_expectations(  ).
+  ENDMETHOD.
+
+
+
+  METHOD clear_expectations.
+    CLEAR: mt_mock_routes.
+  ENDMETHOD.
+
+  METHOD create_expectations.
+
+    mt_mock_routes = VALUE #(
+    (
+     originid                = |8051|
+     origintype              = |TERMINAALI|
+     destinationid          = |10332|
+     destinationtype        = |TERMINAALI|
+     distanceroad = 0
+     distancestraight = 0
+     time  = 0
+     )
+
+     (
+     originid                = |8052|
+     origintype              = |TERMINAALI|
+     destinationid          = |10332|
+     destinationtype        = |TERMINAALI|
+     distanceroad = 0
+     distancestraight = 0
+     time  = 0
+     )
+
+     (
+     originid               = |5550|
+     class                  = |3|
+     origintype             = |LOGY|
+     destinationid          = |10332|
+     destinationtype        = |TERMINAALI|
+     distanceroad           = 7147
+     distancestraight       =  6655
+     time = 5
+     )
+      ).
+  ENDMETHOD.
+
+
+
+ENDCLASS.

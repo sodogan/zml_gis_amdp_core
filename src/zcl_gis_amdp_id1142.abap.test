@@ -1,0 +1,92 @@
+*"* use this source file for your ABAP unit test classes
+*/**TESTING THE AMDP METHODS*/
+CLASS ltcl_tester DEFINITION FOR TESTING
+ INHERITING FROM zcl_gis_amdp_base_aunit
+  RISK LEVEL HARMLESS DURATION MEDIUM.
+
+  PUBLIC SECTION.
+    METHODS: create_expectations  REDEFINITION.
+    METHODS: clear_expectations REDEFINITION.
+
+  PROTECTED SECTION.
+
+  PRIVATE SECTION.
+    METHODS  GetWorkSiteForestPlanStandGeom FOR TESTING RAISING cx_static_check.
+    METHODS:setup, teardown.
+    DATA: mo_cut TYPE REF TO zcl_gis_amdp_id1142.
+    DATA: mt_mock_stands_table  TYPE  ziidt_id1142_gis_get_wsfo_tab.
+ENDCLASS.
+
+
+CLASS ltcl_tester IMPLEMENTATION.
+
+
+
+  METHOD GetWorkSiteForestPlanStandGeom.
+    DATA: lt_actual_stands  TYPE  ziidt_id1142_gis_get_wsfo_tab.
+    TRY.
+        mo_cut->getworksiteforestplanstandgeom(
+          EXPORTING
+            in_contractid   = |77216053|
+            in_blocknumber  = 1
+            in_decade       = '1'
+          IMPORTING
+            out_contractid  = DATA(out_contractid)
+            out_blocknumber = DATA(out_blocknumber)
+            out_decade      = DATA(out_decade)
+            stands_tt       = lt_actual_stands
+        ).
+
+**Make sure that data is returned back
+        DATA(lv_has_records) = check_table_has_records( it_table = lt_actual_stands ).
+        assert_true( act = lv_has_records ).
+
+       assert_match(
+         EXPORTING
+           exp              = 1
+           act              = out_blocknumber
+           msg              = |Block Numbers should match|
+       ).
+
+
+       assert_match(
+         EXPORTING
+           exp              = |1|
+           act              = out_decade
+           msg              = |Decades should match|
+       ).
+
+        DATA(ls_line) =  VALUE #( mt_mock_stands_table[ forest_plan_stand_id = '23773077' ] ).
+
+**Make sure that it contains the data right!
+        cl_abap_unit_assert=>assert_table_contains( table = lt_actual_stands line = ls_line msg = | Should pass| ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        fail_test( |Exception: { lo_exception->get_text(  ) }  | ).
+    ENDTRY.
+  ENDMETHOD.
+
+
+  METHOD setup.
+    TRY.
+        mo_cut =  CAST zcl_gis_amdp_id1142( zcl_gis_amdp_base=>get_instance( iv_id = '1142'  ) ).
+        create_expectations(  ).
+      CATCH cx_root INTO DATA(lo_exception).
+        cl_abap_unit_assert=>fail( 'Set up  has failed' ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD teardown.
+    CLEAR: mo_cut.
+    clear_expectations( ).
+  ENDMETHOD.
+
+  METHOD clear_expectations.
+  clear: mt_mock_stands_table.
+  ENDMETHOD.
+
+  METHOD create_expectations.
+  mt_mock_stands_table = VALUE #( (  forest_plan_stand_id = '23773077' has_overlap_area = 'TRUE' stand_number = '3'   ) ).
+  ENDMETHOD.
+
+ENDCLASS.

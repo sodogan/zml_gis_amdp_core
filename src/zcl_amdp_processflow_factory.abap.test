@@ -1,0 +1,121 @@
+CLASS ltcl_tester DEFINITION DEFERRED.
+CLASS  zcl_amdp_processflow_factory DEFINITION LOCAL FRIENDS ltcl_tester.
+
+*"* use this source file for your ABAP unit test classes
+CLASS ltcl_tester DEFINITION FINAL FOR TESTING INHERITING FROM zcl_gis_amdp_base_aunit
+  DURATION SHORT
+  RISK LEVEL HARMLESS.
+  PUBLIC SECTION.
+    METHODS: zif_gis_amdp_expectations_unit~create_expectations REDEFINITION,
+      zif_gis_amdp_expectations_unit~clear_expectations REDEFINITION.
+
+  PRIVATE SECTION.
+    METHODS:  create_processflow_374 FOR TESTING RAISING cx_static_check.
+    METHODS:  create_processflow_221 FOR TESTING RAISING cx_static_check.
+    METHODS:  create_processflow_231 FOR TESTING RAISING cx_static_check.
+    METHODS:setup,teardown.
+    CLASS-METHODS:class_setup,class_teardown.
+ENDCLASS.
+
+
+CLASS ltcl_tester IMPLEMENTATION.
+
+  METHOD create_processflow_374.
+
+*Create the process flow factory
+    DATA(lo_flow_factory_374) = zcl_amdp_processflow_factory=>new_process_flow( process_flow_key = zif_amdp_processflow=>id374 ).
+
+**check what instance of object
+    CASE TYPE OF lo_flow_factory_374.
+      WHEN TYPE zcl_amdp_processflow_id374.
+        pass_test( iv_msg = 'Created the right type' ).
+
+      WHEN OTHERS.
+        fail_test( iv_msg = 'Created the wrong type' ).
+
+    ENDCASE.
+
+** Now we need to check the instances of the class
+    DATA(lt_instances) = zcl_amdp_processflow_factory=>mt_cache.
+
+    DATA(lv_exists) = xsdbool( line_exists( lt_instances[ id = zif_amdp_processflow=>id374  ] ) ).
+
+    assert_true( act = lv_exists  msg = |Should have already the instance in the cache| ).
+
+  ENDMETHOD.
+
+
+  METHOD create_processflow_221.
+*Create the process flow factory
+    DATA(lo_flow_factory_221) = zcl_amdp_processflow_factory=>new_process_flow( process_flow_key = zif_amdp_processflow=>id221 ).
+
+**check what instance of object
+    CASE TYPE OF lo_flow_factory_221.
+      WHEN TYPE zcl_amdp_processflow_id221.
+        pass_test( iv_msg = 'Created the right type' ).
+
+      WHEN OTHERS.
+        fail_test( iv_msg = 'Created the wrong type' ).
+
+    ENDCASE.
+
+** Now we need to check the instances of the class
+    DATA(lt_instances) = zcl_amdp_processflow_factory=>mt_cache.
+
+    DATA(lv_exists) = xsdbool( line_exists( lt_instances[ id = zif_amdp_processflow=>id221 ] ) ).
+
+    assert_true( act = lv_exists  msg = |Should have already the instance in the cache| ).
+
+  ENDMETHOD.
+
+  METHOD create_processflow_231.
+*Create the process flow factory
+    DATA(lo_flow_factory_231) = zcl_amdp_processflow_factory=>new_process_flow( process_flow_key = zif_amdp_processflow=>id231 ).
+
+**check what instance of object
+    CASE TYPE OF lo_flow_factory_231.
+      WHEN TYPE zcl_amdp_processflow_id231.
+        pass_test( iv_msg = 'Created the right type' ).
+
+      WHEN OTHERS.
+        fail_test( iv_msg = 'Created the wrong type' ).
+
+    ENDCASE.
+
+** Now we need to check the instances of the class
+    DATA(lt_instances) = zcl_amdp_processflow_factory=>mt_cache.
+
+    DATA(lv_exists) = xsdbool( line_exists( lt_instances[ id = zif_amdp_processflow=>id231  ] ) ).
+
+    assert_true( act = lv_exists  msg = |Should have already the instance in the cache| ).
+
+  ENDMETHOD.
+
+
+  METHOD class_setup.
+
+  ENDMETHOD.
+
+  METHOD class_teardown.
+
+  ENDMETHOD.
+
+  METHOD setup.
+
+  ENDMETHOD.
+
+  METHOD teardown.
+
+  ENDMETHOD.
+
+  METHOD zif_gis_amdp_expectations_unit~clear_expectations.
+
+  ENDMETHOD.
+
+  METHOD zif_gis_amdp_expectations_unit~create_expectations.
+
+  ENDMETHOD.
+
+
+
+ENDCLASS.

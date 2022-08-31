@@ -1,0 +1,157 @@
+*"* use this source file for your ABAP unit test classes
+*/**TESTING THE AMDP METHODS*/
+CLASS ltcl_tester DEFINITION FOR TESTING
+ INHERITING FROM zcl_gis_amdp_base_aunit
+  CREATE PROTECTED
+  RISK LEVEL HARMLESS.
+
+  PUBLIC SECTION.
+    METHODS: create_expectations REDEFINITION.
+    METHODS: clear_expectations REDEFINITION.
+
+  PROTECTED SECTION.
+
+  PRIVATE SECTION.
+    METHODS  saveworkingsitesampleplot_del FOR TESTING RAISING cx_static_check.
+    METHODS  saveworkingsitesampleplot_up FOR TESTING RAISING cx_static_check.
+    METHODS  saveworkingsitesamplep_wrong FOR TESTING RAISING cx_static_check.
+    METHODS:setup, teardown.
+    DATA: mo_cut TYPE REF TO zcl_gis_amdp_id917.
+ENDCLASS.
+
+
+CLASS ltcl_tester IMPLEMENTATION.
+
+
+*******************************************************************************
+** Please be aware that this method contains DB Manipulation(Insert/Delete)!
+*******************************************************************************
+  METHOD saveworkingsitesampleplot_del.
+
+    TRY.
+** Turn on the commit on
+        toggle_commit_on(  ).
+
+        mo_cut->savecompany(
+          EXPORTING
+            in_contractorid  = |FI15097642|
+            organizationname = |Metsätyö Havanka Oy|
+            action           = 2
+            zyrittajasuco    = VALUE #( ( subconid = 12 ) )
+            contract_id      = |12|
+            contractor_num   = |23|
+          IMPORTING
+            out_contractorid = DATA(lv_out_contractorid)
+        ).
+**Make sure that it does not reach here
+
+        commit_work(  ).
+**Make sure that it contains the data right!
+        assert_not_initial(
+          EXPORTING
+            act = lv_out_contractorid
+            msg = |Contractor ID should return a value|
+        ).
+
+** Turn on the commit off
+        toggle_commit_off(  ).
+      CATCH cx_root INTO DATA(lo_exception).
+        ROLLBACK WORK.
+        fail_exception(
+          EXPORTING
+            io_exception = lo_exception
+*           quit         = method
+        ).
+    ENDTRY.
+  ENDMETHOD.
+  METHOD saveworkingsitesampleplot_up.
+
+    TRY.
+** Turn on the commit on
+        toggle_commit_on(  ).
+
+        mo_cut->savecompany(
+          EXPORTING
+            in_contractorid  = |FI15097642|
+            organizationname = |Metsätyö Havanka Oy|
+            action           = 1
+            zyrittajasuco    = VALUE #( ( subconid = 12 ) )
+            contract_id      = |12|
+            contractor_num   = |23|
+          IMPORTING
+            out_contractorid = DATA(lv_out_contractorid)
+        ).
+**Make sure that it does not reach here
+
+        commit_work(  ).
+**Make sure that it contains the data right!
+        assert_not_initial(
+          EXPORTING
+            act = lv_out_contractorid
+            msg = |Contractor ID should return a value|
+        ).
+
+** Turn on the commit off
+        toggle_commit_off(  ).
+      CATCH cx_root INTO DATA(lo_exception).
+        ROLLBACK WORK.
+        fail_exception(
+          EXPORTING
+            io_exception = lo_exception
+*           quit         = method
+        ).
+    ENDTRY.
+  ENDMETHOD.
+
+*********************************************************************************
+* Action code can only be 1 or 2 and this should raise exception
+**********************************************************************************
+  METHOD saveworkingsitesamplep_wrong.
+    TRY.
+** Turn on the commit on
+        toggle_commit_on(  ).
+
+        mo_cut->savecompany(
+          EXPORTING
+            in_contractorid  = |FI15097642|
+            organizationname = |Metsätyö Havanka Oy|
+            action           = 3
+            zyrittajasuco    = VALUE #( ( subconid = 12 ) )
+            contract_id      = |12|
+            contractor_num   = |23|
+          IMPORTING
+            out_contractorid = DATA(lv_out_contractorid)
+        ).
+**Make sure that it does not reach here
+
+        commit_work(  ).
+**Make sure that it contains the data right!
+        fail_test( iv_msg = |If reaches here, test has failed to validate the action code| ).
+** Turn on the commit off
+        toggle_commit_off(  ).
+      CATCH cx_root INTO DATA(lo_exception).
+        ROLLBACK WORK.
+        pass_test( iv_msg = |Expected to raise exception| ).
+    ENDTRY.
+  ENDMETHOD.
+
+
+  METHOD setup.
+    TRY.
+        mo_cut =  CAST zcl_gis_amdp_id917( zcl_gis_amdp_base=>get_instance( iv_id = '917'  ) ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        cl_abap_unit_assert=>fail( 'Set up  has failed' ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD teardown.
+    CLEAR: mo_cut.
+  ENDMETHOD.
+
+
+
+
+
+
+ENDCLASS.

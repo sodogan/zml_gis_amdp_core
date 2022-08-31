@@ -1,0 +1,156 @@
+*"* use this source file for your ABAP unit test classes
+*/**TESTING THE AMDP METHODS*/
+CLASS ltcl_tester DEFINITION FOR TESTING
+ INHERITING FROM zcl_gis_amdp_base_aunit
+  CREATE PROTECTED
+  RISK LEVEL HARMLESS.
+
+  PUBLIC SECTION.
+    METHODS: create_expectations  REDEFINITION.
+    METHODS: clear_expectations REDEFINITION.
+
+  PROTECTED SECTION.
+
+  PRIVATE SECTION.
+
+    METHODS  location_lookup FOR TESTING RAISING cx_static_check.
+    METHODS  location_lookup_defect FOR TESTING RAISING cx_static_check.
+    METHODS:setup, teardown.
+    DATA: mo_cut TYPE REF TO zcl_gis_amdp_id410.
+    DATA: mt_mock_logys     TYPE zprlogy_typetab1.
+    DATA: mt_mock_storages     TYPE zprstorage_typetab.
+    DATA: mt_mock_road_storages     TYPE zprroad_storage_typetab.
+
+ENDCLASS.
+
+
+CLASS ltcl_tester IMPLEMENTATION.
+
+*******************************************************************************
+** Basic Test without DB Manipulation(Insert/Delete)!
+*******************************************************************************
+  METHOD location_lookup_defect.
+    TRY.
+
+        DATA(lt_actual_logys) = VALUE zprlogy_typetab1( ).
+        DATA(lt_actual_storages) = VALUE zprstorage_typetab( ).
+        DATA(lt_actual_road_storages) = VALUE zprroad_storage_typetab( ).
+
+        mo_cut->location_lookup(
+          EXPORTING
+            in_logys          = VALUE #( ( ) )
+            in_storages       = VALUE #( ( ) )
+            in_road_storages  = VALUE #( ( contract = |276111033| decade = 2 storage_number = 1  coordinate_system = |EUREF|  coordinates = '240377.48953756283 6820333.000411826' ) )
+          IMPORTING
+            out_logys         = lt_actual_logys
+            out_storages      = lt_actual_storages
+            out_road_storages = lt_actual_road_storages
+        ).
+
+
+**Make sure that it contains the data right for the returned tables
+        DATA(ls_line_logys) =  VALUE #( mt_mock_logys[ logy_id = 349 ] ).
+        cl_abap_unit_assert=>assert_table_contains( table = lt_actual_logys line = ls_line_logys msg = | Logys Data should match | ).
+
+        DATA(ls_line_storage)  =  VALUE #( mt_mock_storages[ storage_id = |J2930002| ] ).
+        cl_abap_unit_assert=>assert_table_contains( table = lt_actual_storages line = ls_line_storage msg = | Storages Data should match | ).
+
+        DATA(ls_line_road_storages)  =  VALUE #( mt_mock_road_storages[ contract = |924125585| ] ).
+        cl_abap_unit_assert=>assert_table_contains( table = lt_actual_road_storages line = ls_line_road_storages msg = | Road Storages Data should match | ).
+
+
+
+      CATCH cx_root INTO DATA(lo_exception).
+        fail_exception( io_exception = lo_exception ).
+    ENDTRY.
+  ENDMETHOD.
+
+
+
+*******************************************************************************
+** Basic Test without DB Manipulation(Insert/Delete)!
+*******************************************************************************
+  METHOD location_lookup.
+    TRY.
+
+        DATA(lt_actual_logys) = VALUE zprlogy_typetab1( ).
+        DATA(lt_actual_storages) = VALUE zprstorage_typetab( ).
+        DATA(lt_actual_road_storages) = VALUE zprroad_storage_typetab( ).
+
+        mo_cut->location_lookup(
+          EXPORTING
+            in_logys          = VALUE #( ( logy_id = 349  class = 1   coordinates = |240377.48953756283 6820333.000411826| coordinate_system = |EUREF|  ) )
+            in_storages       = VALUE #( ( storage_id = |J2930002|  storage_type = |TOIMITUSVARASTO| coordinate_system = |EUREF| coordinates = |240377.48953756283 6820333.000411826| ) )
+            in_road_storages  = VALUE #( ( contract = |924125585| decade = 1 storage_number = 1  coordinate_system = |EUREF|  coordinates = |240377.48953756283 6820333.000411826| ) )
+          IMPORTING
+            out_logys         = lt_actual_logys
+            out_storages      = lt_actual_storages
+            out_road_storages = lt_actual_road_storages
+        ).
+
+
+**Make sure that it contains the data right for the returned tables
+        DATA(ls_line_logys) =  VALUE #( mt_mock_logys[ logy_id = 349 ] ).
+        cl_abap_unit_assert=>assert_table_contains( table = lt_actual_logys line = ls_line_logys msg = | Logys Data should match | ).
+
+        DATA(ls_line_storage)  =  VALUE #( mt_mock_storages[ storage_id = |J2930002| ] ).
+        cl_abap_unit_assert=>assert_table_contains( table = lt_actual_storages line = ls_line_storage msg = | Storages Data should match | ).
+
+        DATA(ls_line_road_storages)  =  VALUE #( mt_mock_road_storages[ contract = |924125585| ] ).
+        cl_abap_unit_assert=>assert_table_contains( table = lt_actual_road_storages line = ls_line_road_storages msg = | Road Storages Data should match | ).
+
+
+
+      CATCH cx_root INTO DATA(lo_exception).
+        fail_exception( io_exception = lo_exception ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD setup.
+    TRY.
+        mo_cut =  CAST zcl_gis_amdp_id410( zcl_gis_amdp_base=>get_instance( iv_id = '410'  ) ).
+
+        create_expectations( ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        cl_abap_unit_assert=>fail( 'Set up  has failed' ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD teardown.
+    CLEAR: mo_cut.
+    clear_expectations(  ).
+  ENDMETHOD.
+
+
+
+  METHOD clear_expectations.
+    CLEAR: mt_mock_road_storages,mt_mock_logys,mt_mock_storages.
+  ENDMETHOD.
+
+  METHOD create_expectations.
+    mt_mock_logys = VALUE #( ( logy_id = 349 class = 1 coordinate_system = |3067|  coordinates = |568110 6883178| ) ).
+    mt_mock_storages = VALUE #(
+    ( storage_id = |J2930002|
+      storage_type = |TOIMITUSVARASTO|
+      coordinate_system = |3067|
+      coordinates = |202079 6788733|
+      store_logyid = |0000000154|
+      store_metlaid = |01|
+      store_piiriid = |11|
+      ) ).
+    mt_mock_road_storages = VALUE #(
+    (
+     contract = |924125585|
+     storage_number  = 1
+     decade   = 1
+     coordinate_system = |3067|
+     coordinates  = |343063 7022537|
+     road_logyid   = |0000000621|
+     road_metlaid   = |02|
+     road_piiriid = |32|
+     ) ).
+
+  ENDMETHOD.
+
+ENDCLASS.

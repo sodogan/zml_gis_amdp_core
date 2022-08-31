@@ -1,0 +1,232 @@
+*"* use this source file for your ABAP unit test classes
+*/**TESTING THE AMDP METHODS*/
+CLASS ltcl_tester DEFINITION FOR TESTING
+ INHERITING FROM zcl_gis_amdp_base_aunit
+  CREATE PROTECTED
+  RISK LEVEL HARMLESS DURATION MEDIUM.
+
+  PUBLIC SECTION.
+    METHODS: create_expectations  REDEFINITION.
+    METHODS: clear_expectations REDEFINITION.
+
+  PROTECTED SECTION.
+
+  PRIVATE SECTION.
+
+    METHODS  validate_forest_use_pp_wrong. " FOR TESTING RAISING cx_static_check.
+    METHODS  validate_forest_use_lsp_wrong. "FOR TESTING RAISING cx_static_check.
+    METHODS  validate_forest_use_pge_right FOR TESTING RAISING cx_static_check.
+    METHODS:setup, teardown.
+    DATA: mo_cut TYPE REF TO zcl_gis_amdp_id1183.
+    DATA:mt_mock_harv_stands TYPE ziidtid1183_validate_for_tab4.
+    DATA:mt_mock_forest_use_dec_stands  TYPE ziidtid1183_validate_for_tab1.
+*    DATA:mt_mock_error_geoms  TYPE ziidtid1183_validate_for_tab2.
+*    DATA:mt_mock_geometries  TYPE ziidtid1183_validate_fore_tab.
+*    DATA:mt_mock_crm_ids  TYPE  zprstringtab9.
+
+ENDCLASS.
+
+
+CLASS ltcl_tester IMPLEMENTATION.
+
+
+
+  METHOD validate_forest_use_pge_right.
+* Output data
+    DATA(lt_act_forest_use_dec_stands)  = VALUE ziidtid1183_validate_for_tab1( ).
+    DATA(lt_actual_harvesting_stands)  = VALUE ziidtid1183_validate_for_tab4( ).
+
+    TRY.
+        mo_cut->validate_forest_use(
+          EXPORTING
+            in_contractid                 = |698217062|
+            in_decade                     = |1|
+            in_harvesting_block_number    = |1| "|79920| blocknumber is not the same as harvestingblockid
+            in_variant                    = |PGE|
+            in_geometry                   = || " geometry is null also valid scenario
+*            in_geometry                   = |0.5 0.5 0.5 1.5 1.5 1.5 1.5 0.5 0.5 0.5|
+            in_start_date                 = |2022-01-01|
+            in_end_date                   = |2022-04-01|
+          IMPORTING
+            out_contractid                = DATA(lv_out_contractid)
+            out_decade                    = DATA(lv_out_decade)
+            out_harvesting_block_number   = DATA(lv_out_harv_block_number)
+            out_variant                   = DATA(lv_out_variant)
+            out_start_date                = DATA(lv_out_start_date)
+            out_end_date                  = DATA(lv_out_end_date)
+            harvesting_stands             = lt_actual_harvesting_stands
+            forest_use_declaration_stands = lt_act_forest_use_dec_stands
+            is_valid                      = DATA(lv_out_isvalid)
+        ).
+
+**Make sure that data is returned back
+**This should raise exception and the error message should be filled
+* Viktors Krebss 15.08.2022 two line below commented. is_valid misinterpreted. It is a harvesting stand having expired date, geometry
+* errors etc. Please choose another condition.
+*      DATA(lv_isvalid) = xsdbool(  lv_out_isvalid EQ 'false' ).
+*      assert_true( act = lv_isvalid ).
+*445615
+***Make sure that it contains the data right!
+*        DATA(ls_line) =  VALUE #( mt_mock_output_t[ contract_id  = |1081100662| ] ).
+*        cl_abap_unit_assert=>assert_table_contains( table = lt_actual_output_t line = ls_line msg = | Should pass| ).
+
+**Make sure that it contains the data right!
+
+      CATCH cx_root INTO DATA(lo_exception).
+
+        fail_exception( io_exception = lo_exception ).
+    ENDTRY.
+  ENDMETHOD.
+*******************************************************************************
+** Basic Test without DB Manipulation(Insert/Delete)!
+*******************************************************************************
+  METHOD validate_forest_use_pp_wrong.
+* Output data
+    DATA(lt_act_forest_use_dec_stands)  = VALUE ziidtid1183_validate_for_tab1( ).
+    DATA(lt_actual_harvesting_stands)  = VALUE ziidtid1183_validate_for_tab4( ).
+
+
+*    DATA(lt_validate_forest_use_dec)  = VALUE ziidtid1183_validate_forest4_t( ).
+*    DATA(lt_actual_error_geometries)  = VALUE ziidtid1183_validate_for_tab2( ).
+*    DATA(lt_actual_geometries)  = VALUE ziidtid1183_validate_fore_tab( ).
+*    DATA(lt_actual_crm_ids)  = VALUE zprstringtab9( ).
+
+    TRY.
+
+
+        mo_cut->validate_forest_use(
+          EXPORTING
+            in_contractid                 = |698217062|
+            in_decade                     = |1|
+            in_harvesting_block_number    = |79920|
+            in_variant                    = |pP|
+            in_geometry                   = |240377.48953756283 6820333.000411826|
+            in_start_date                 = |2022-01-01|
+            in_end_date                   = |2022-04-01|
+          IMPORTING
+            out_contractid                = DATA(lv_out_contractid)
+            out_decade                    = DATA(lv_out_decade)
+            out_harvesting_block_number   = DATA(lv_out_harv_block_number)
+            out_variant                   = DATA(lv_out_variant)
+            out_start_date                = DATA(lv_out_start_date)
+            out_end_date                  = DATA(lv_out_end_date)
+            harvesting_stands             = lt_actual_harvesting_stands
+            forest_use_declaration_stands = lt_act_forest_use_dec_stands
+            is_valid                      = DATA(lv_out_isvalid)
+        ).
+
+        fail_test(
+          EXPORTING
+            iv_msg = |It should not reach here|
+        ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+**As expected should throw exception
+        pass_test( ).
+
+    ENDTRY.
+  ENDMETHOD.
+
+
+  METHOD validate_forest_use_lsp_wrong.
+    DATA(lt_act_forest_use_dec_stands)  = VALUE ziidtid1183_validate_for_tab1( ).
+    DATA(lt_actual_harvesting_stands)  = VALUE ziidtid1183_validate_for_tab4( ).
+
+
+    DATA: lv_geometry TYPE zgis_amdp_poslist,
+          lv_variant  TYPE zgis_amdp_gtype,
+          geom        TYPE geom_ewkb
+          .
+
+
+    lv_variant = 'lSP'.
+    lv_geometry = '240377.48953756283 6820333.000411826 240330.48952423738 6820336.50041247 240293.35577624541 6820296.0857868055 240315.12026900068 6820299.269669891 240377.48953756283 6820333.000411826'.
+
+
+    TRY.
+
+
+        mo_cut->validate_forest_use(
+          EXPORTING
+            in_contractid                 = |698217062|
+            in_decade                     = |1|
+            in_harvesting_block_number    = |79920|
+            in_variant                    = |{ lv_variant }|
+            in_geometry                   = |{ lv_geometry }|
+            in_start_date                 = |2022-01-01|
+            in_end_date                   = |2022-04-01|
+          IMPORTING
+            out_contractid                = DATA(lv_out_contractid)
+            out_decade                    = DATA(lv_out_decade)
+            out_harvesting_block_number   = DATA(lv_out_harv_block_number)
+            out_variant                   = DATA(lv_out_variant)
+            out_start_date                = DATA(lv_out_start_date)
+            out_end_date                  = DATA(lv_out_end_date)
+            harvesting_stands             = lt_actual_harvesting_stands
+            forest_use_declaration_stands = lt_act_forest_use_dec_stands
+            is_valid                      = DATA(lv_out_isvalid)
+        ).
+
+        fail_test(
+          EXPORTING
+            iv_msg = |It should not reach here|
+        ).
+
+
+      CATCH cx_root INTO DATA(lo_exception).
+**As expected should throw exception
+        pass_test( ).
+
+    ENDTRY.
+  ENDMETHOD.
+
+
+  METHOD setup.
+    TRY.
+        mo_cut =  CAST zcl_gis_amdp_id1183( zcl_gis_amdp_base=>get_instance( iv_id = '1183'  ) ).
+
+        create_expectations( ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        cl_abap_unit_assert=>fail( 'Set up  has failed' ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD teardown.
+    CLEAR: mo_cut.
+    clear_expectations(  ).
+  ENDMETHOD.
+
+  METHOD clear_expectations.
+    CLEAR: mt_mock_harv_stands,
+           mt_mock_forest_use_dec_stands
+*           mt_mock_error_geoms,
+*           mt_mock_geometries,
+*           mt_mock_crm_ids
+           .
+  ENDMETHOD.
+
+  METHOD create_expectations.
+    mt_mock_harv_stands = VALUE #( ( validation_error_geometry = 'true'
+                                     validation_error_status = 'false'
+                                     validation_error_tobe_outdated = 'false'
+                                     validation_error_date = 'false'
+                                     validation_error_text = 'MKI puuttuu'
+                                     validation_error_geometrytext = 'MKI puuttuu'
+                                     validation_error_harvmethodtxt = 'MKI puuttuu'
+                                     validation_error_harv_method = 'true'
+
+
+
+                                     )  ).
+    mt_mock_forest_use_dec_stands = VALUE #(  ).
+
+*    mt_mock_error_geoms = VALUE #(  ).
+*    mt_mock_geometries  = VALUE #(  ).
+*    mt_mock_crm_ids  = VALUE #(  ).
+  ENDMETHOD.
+
+
+
+
+ENDCLASS.

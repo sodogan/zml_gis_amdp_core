@@ -1,0 +1,127 @@
+*"* use this source file for your ABAP unit test classes
+CLASS ltcl_tester DEFINITION FINAL FOR TESTING
+  INHERITING FROM zcl_gis_amdp_base_aunit
+ RISK LEVEL HARMLESS DURATION SHORT.
+  PUBLIC SECTION.
+    METHODS:
+      is_harvestingornot FOR TESTING RAISING cx_static_check,
+      transform_geotimestamp_ISO FOR TESTING RAISING cx_static_check,
+      transform_geotimestamp_T_FF3 FOR TESTING RAISING cx_static_check,
+      create_expectations REDEFINITION,
+      clear_expectations REDEFINITION.
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+    METHODS:
+      setup,teardown.
+    DATA: mo_cut TYPE REF TO zcl_gis_abap_trigger_utility.
+ENDCLASS.
+
+
+CLASS ltcl_tester IMPLEMENTATION.
+****************************************************************************
+**SELECT to_timestamp('2019-07-08T05:43:49.556', 'YYYY-MM-DD"T"HH24:MI:SS.FF3')  "DATE Format" FROM DUMMY;
+* This expects string like this: |2019-07-08T05:43:49.556Z|
+****************************************************************************
+  METHOD transform_geotimestamp_T_FF3.
+
+    TRY.
+
+        DATA(lv_transformed_tmstamp) = mo_cut->transform_timestamp_forhana( geo_timestamp = |2019-07-08T05:43:49.556Z| ).
+
+**check that it has formatted correctly
+        assert_equals(
+          EXPORTING
+            exp   = |2019-07-08 05:43:49.55|
+            act   = lv_transformed_tmstamp
+            msg   = |Timstamp to hana format has failed|
+            level = if_aunit_constants=>severity-medium
+        ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        fail_exception(
+          io_exception = lo_exception
+        ).
+    ENDTRY.
+
+  ENDMETHOD.
+****************************************************************************
+**SELECT to_timestamp('2019-07-08T05:43:49', 'YYYY-MM-DD"T"HH24:MI:SS')  "DATE Format" FROM DUMMY;
+* This expects string like this: |2019-07-08T05:43:49|
+****************************************************************************
+  METHOD transform_geotimestamp_iso.
+ TRY.
+
+**From ABAP side how do we get the Timestamp format
+        Get time STAMP FIELD DATA(lv_timestamp).
+
+        lv_timestamp =  |20190708054349|.
+        DATA(lv_timestamp_str)  = |{ lv_timestamp TIMESTAMP =  ISO } | .
+
+        DATA(lv_transformed_tmstamp) = mo_cut->transform_timestamp_forhana( geo_timestamp = lv_timestamp_str ).
+
+**check that it has formatted correctly
+        assert_equals(
+          EXPORTING
+            exp   = |2019-07-08 05:43:49|
+            act   = lv_transformed_tmstamp
+            msg   = |Timstamp to hana format has failed|
+            level = if_aunit_constants=>severity-medium
+        ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        fail_exception(
+          io_exception = lo_exception
+        ).
+    ENDTRY.
+  ENDMETHOD.
+
+
+  METHOD is_harvestingornot.
+*   test-INJECTION isharvestingornot.
+*   isharvestingorsilviculture-is_harvesting = abap_true.
+*   end-TEST-INJECTION.
+    TRY.
+*Test for harvesting
+        DATA(ls_flag)  = mo_cut->isharvestingorsilviculture( workingsiteid = 'H' ).
+
+        IF ls_flag-is_harvesting NE abap_true.
+          fail_test( iv_msg = 'Should be Harvesting' ).
+        ENDIF.
+
+
+*Test for silvi
+        ls_flag  = mo_cut->isharvestingorsilviculture( workingsiteid = 'S' ).
+
+        IF ls_flag-is_silviculture NE abap_true.
+          fail_test( iv_msg = 'Should be Silviculture' ).
+        ENDIF.
+
+      CATCH cx_root INTO DATA(lo_exception).
+        fail_test( iv_msg = 'Expected exceptions' ).
+    ENDTRY.
+
+  ENDMETHOD.
+
+
+
+  METHOD setup.
+    mo_cut = NEW #(  ).
+  ENDMETHOD.
+
+  METHOD teardown.
+
+  ENDMETHOD.
+
+
+
+  METHOD clear_expectations.
+
+  ENDMETHOD.
+
+  METHOD create_expectations.
+
+  ENDMETHOD.
+
+
+
+ENDCLASS.

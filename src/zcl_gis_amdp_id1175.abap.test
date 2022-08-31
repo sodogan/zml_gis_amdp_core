@@ -1,0 +1,229 @@
+*"* use this source file for your ABAP unit test classes
+*/**TESTING THE AMDP METHODS*/
+CLASS ltcl_tester DEFINITION FOR TESTING
+ INHERITING FROM zcl_gis_amdp_base_aunit
+  CREATE PROTECTED
+  RISK LEVEL HARMLESS.
+
+  PUBLIC SECTION.
+    METHODS: create_expectations  REDEFINITION.
+    METHODS: clear_expectations REDEFINITION.
+
+  PROTECTED SECTION.
+
+  PRIVATE SECTION.
+    METHODS  get_kemera_completion_dec FOR TESTING RAISING cx_static_check.
+    METHODS  get_kemera_decision FOR TESTING RAISING cx_static_check.
+    METHODS:setup, teardown.
+    DATA: mo_cut TYPE REF TO zcl_gis_amdp_id1175.
+    DATA: mt_mock_decision_geometries TYPE zprdtid1175_gis_get_kem_tab1,
+          mt_mock_harvestingblocks    TYPE zprdtid1175_gis_get_keme_tab2,
+          mt_mock_silviculturalblocks TYPE zprdtid1175_gis_get_keme_tab1,
+          mt_mock_fin_act_comp_stands      type zprdtid1175_gis_get_kemera_tt.
+ENDCLASS.
+
+
+CLASS ltcl_tester IMPLEMENTATION.
+
+
+*******************************************************************************
+** Basic Test NO DB Manipulations(Insert/Delete)!
+*******************************************************************************
+  METHOD get_kemera_decision.
+    DATA: lt_actual_decision_geometries TYPE zprdtid1175_gis_get_kem_tab1,
+          lt_actual_harvestingblocks    TYPE zprdtid1175_gis_get_keme_tab2,
+          lt_actual_silviculturalblocks TYPE zprdtid1175_gis_get_keme_tab1.
+
+
+
+*    DATA(lt_decision_geometries)  = VALUE zprdtid1175_gis_get_kem_tab1( ).
+*    DATA(lt_point_properties)  = VALUE zprdtid1175_point_property_tt( ).
+*    DATA(lt_line_string_properties)  = VALUE zprdtid1175_linestringprope_tt( ).
+*    DATA(lt_polygon_properties)  = VALUE zprdtid1175_polygonproperty_tt( ).
+*    DATA(lt_exterior)  = VALUE zprdtid1175_xterior_tt( ).
+*    DATA(lt_exterior_ring_curve_member)  = VALUE zprdtid1175_ring_curve_mem_tt( ).
+*    DATA(lt_exterior_linear_ring_strtab)  = VALUE zprdtid1175_lring_stringtab_tt( ).
+*    DATA(lt_exterior_linear_ringpointpr)  = VALUE zprdtid1175_lring_pointprop_tt( ).
+*    DATA(lt_interior)  = VALUE zprdtid1174_xterior_tab( ).
+*    DATA(lt_works)  = VALUE zprdtid1175_gis_save_keme_tab( ).
+*    DATA(lt_harvestingblock) = VALUE zprdtid1175_gis_get_keme_tab2( ).
+*    DATA(lt_silviculturalblock) = VALUE zprdtid1175_gis_get_keme_tab1( ).
+*
+*
+*    DATA(financing_completion_stand)    = VALUE zprdtid1175_gis_get_keme_tab3( ).
+*    DATA(financing_polygon_properties)  = VALUE zprdtid1175_polygonproperty_tt( ).
+*    DATA(financing_exterior)            = VALUE zprdtid1175_xterior_tt( ).
+*    DATA(fin_exterior_ring_curve_member) = VALUE zprdtid1175_ring_curve_mem_tt( ).
+*
+*    DATA(fin_ext_linear_ring_stringtab) = VALUE zprdtid1175_lring_stringtab_tt( ).
+*    DATA(fin_ext_linear_ring_pointprop) = VALUE zprdtid1175_lring_pointprop_tt( ).
+*    DATA(fin_exterior_act_interior) = VALUE zprdtid1175_xterior_tab( ).
+
+    TRY.
+
+        DATA(lt_work_code_groups) = VALUE zprstring_workcode_group_tt( ( workcode_group = |6| ) ).
+
+
+        mo_cut->get_kemera_decision(
+          EXPORTING
+            in_case_number      = |11-2018-15530| "|11-2018-14143|
+            work_code_groups    = lt_work_code_groups
+          IMPORTING
+            out_case_number     = DATA(lv_out_case_number)
+            decision_number     = DATA(lv_out_decision_number)
+            case_date           = DATA(lv_out_case_date)
+            decision_date       = DATA(lv_out_decision_date)
+            decision_geometries = lt_actual_decision_geometries
+            harvestingblocks    = lt_actual_harvestingblocks
+            silviculturalblocks = lt_actual_silviculturalblocks
+        ).
+
+**Make sure that data matches
+        assert_match(
+          EXPORTING
+            exp = |11-2018-15530-P9-2|
+            act = lv_out_decision_number
+            msg = |Decision numbers should match|
+        ).
+
+        assert_match(
+          EXPORTING
+            exp = |2019-08-21 00:00:00.0000000|
+            act = lv_out_case_date
+            msg = |Case dates should match|
+        ).
+
+
+        assert_match(
+          EXPORTING
+            exp = |2019-11-08 00:00:00.0000000|
+            act = lv_out_decision_date
+            msg = |Decision dates should match|
+        ).
+
+
+*Make sure that there is data returned back
+        DATA(lv_has_records) = check_table_has_records( it_table = lt_actual_decision_geometries ).
+        assert_true( act = lv_has_records ).
+
+*Should not have records for these
+        lv_has_records = check_table_has_records( it_table = lt_actual_harvestingblocks ).
+        assert_false( act = lv_has_records ).
+
+*Should not have records for these
+        lv_has_records = check_table_has_records( it_table = lt_actual_silviculturalblocks ).
+        assert_false( act = lv_has_records ).
+
+
+*       DATA(ls_line) =  VALUE #( mt_mock_stands_table[ stand_number = 22370496 ] ).
+*       cl_abap_unit_assert=>assert_table_contains( table = lt_actual_stands line = ls_line msg = | Should pass| ).
+
+
+      CATCH cx_root INTO DATA(lo_exception).
+        fail_exception( io_exception = lo_exception ).
+    ENDTRY.
+  ENDMETHOD.
+
+*******************************************************************************
+** Basic Test NO DB Manipulations(Insert/Delete)!
+*******************************************************************************
+  METHOD get_kemera_completion_dec.
+    TRY.
+    DATA:  lt_actual_fin_act_comp_stands  type zprdtid1175_gis_get_kemera_tt.
+    mo_cut->get_kemera_completion_dec(
+      EXPORTING
+        in_financing_actnumber         = |11-2019-11662|
+      IMPORTING
+        out_financing_actnumber        = DATA(lv_out_financing_actnumber)
+        completion_dec_ref             = DATA(lv_out_completion_dec_ref)
+        work_code                      = DATA(lv_out_work_code)
+        decision_date                  = DATA(lv_out_decision_date)
+        sent_date                      = DATA(lv_out_sent_date)
+        start_date                     = DATA(lv_out_start_date)
+        end_date                       = DATA(lv_out_end_date)
+        financing_act_completionstands = lt_actual_fin_act_comp_stands
+    ).
+
+*Interesting that all the data has null work_code, sent_date_decision_date etc..
+        assert_match(
+          EXPORTING
+            exp = ||
+            act = lv_out_work_code
+            msg = |Work codes should match|
+        ).
+
+        assert_match(
+          EXPORTING
+            exp = ||
+            act = lv_out_sent_date
+            msg = |Sent dates should match|
+        ).
+
+
+        assert_match(
+          EXPORTING
+            exp = ||
+            act = lv_out_decision_date
+            msg = |Decision dates should match|
+        ).
+
+
+*Make sure that there is data returned back
+        DATA(lv_has_records) = check_table_has_records( it_table = mt_mock_fin_act_comp_stands ).
+        assert_true( act = lv_has_records ).
+
+
+       DATA(ls_line) =  VALUE #( mt_mock_fin_act_comp_stands[ stand_reference = |M-G20190000013354KMR| ] ).
+       cl_abap_unit_assert=>assert_table_contains( table = lt_actual_fin_act_comp_stands line = ls_line msg = | Should pass| ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        fail_exception( io_exception = lo_exception ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD setup.
+    TRY.
+        mo_cut =  CAST zcl_gis_amdp_id1175( zcl_gis_amdp_base=>get_instance( iv_id = '1175'  ) ).
+        create_expectations(  ).
+      CATCH cx_root INTO DATA(lo_exception).
+        cl_abap_unit_assert=>fail( 'Set up  has failed' ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD teardown.
+    CLEAR: mo_cut.
+    clear_expectations(  ).
+  ENDMETHOD.
+
+  METHOD clear_expectations.
+    CLEAR: mt_mock_decision_geometries,
+           mt_mock_harvestingblocks ,
+           mt_mock_silviculturalblocks.
+  ENDMETHOD.
+
+  METHOD create_expectations.
+    DATA(lv_geoloc) = |12455666| && |23|
+                       && |567|  .
+
+    mt_mock_decision_geometries = VALUE #( ( stand_reference = |M-G20190000020815KMR|
+    stand_id = |8356667|
+    geoloc = lv_geoloc
+    geometry_reference_error = |2|  ) ).
+
+
+    mt_mock_harvestingblocks = VALUE #( ( contract = ||  decade = ||  block_number = || ) ).
+    mt_mock_silviculturalblocks = VALUE #( (  silvicultural_order  = ||  block_number = || )  ).
+
+    mt_mock_fin_act_comp_stands = VALUE #( (
+    stand_reference = |M-G20190000013354KMR|
+    stand_number = |11|  cost_type_number = |323|
+    polygon_property = |POLYGON ((478257.52 7064056.775,478254.048 7063997.758,478316.537 7064017.43,478344.31| &&
+                       | 7064042.889,478360.511 7064068.347,478338.524 7064099.592,478330.424 7064147.037,478355.882 7064160.924,478335.052| &&
+                       | 7064197.954,478259.834 7064120.422,478276.035 7064089.177,478257.52 7064056.775))|
+
+    ) ).
+
+  ENDMETHOD.
+
+
+ENDCLASS.

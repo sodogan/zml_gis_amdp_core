@@ -1,0 +1,170 @@
+*"* use this source file for your ABAP unit test classes
+*/**TESTING THE AMDP METHODS*/
+CLASS ltcl_tester DEFINITION FOR TESTING
+ INHERITING FROM zcl_gis_amdp_base_aunit
+  CREATE PROTECTED
+  RISK LEVEL HARMLESS.
+
+  PUBLIC SECTION.
+    METHODS: create_expectations  REDEFINITION.
+    METHODS: clear_expectations REDEFINITION.
+
+  PROTECTED SECTION.
+
+  PRIVATE SECTION.
+
+    METHODS  map_symbols_send_euref FOR TESTING RAISING cx_static_check.
+    METHODS  map_symb_send_euref_no_stcode FOR TESTING RAISING cx_static_check.
+**Commented out for now as Finnish standard KKJ is throwing a DATABASE exception
+** This issue is addressed in the JIRA story and needs to be fixed
+    METHODS  map_symbols_send_kkj ."FOR TESTING RAISING cx_static_check.
+    METHODS:setup, teardown.
+    DATA: mo_cut TYPE REF TO zcl_gis_amdp_id408.
+    DATA: mt_mock_symbols TYPE  zprmapsymbol_type_tab.
+
+ENDCLASS.
+
+
+CLASS ltcl_tester IMPLEMENTATION.
+
+
+*******************************************************************************
+** Basic Test without DB Manipulation(Insert/Delete)!
+*******************************************************************************
+  METHOD map_symbols_send_euref.
+    TRY.
+        DATA(lt_actual_map_symbols) = VALUE zprmapsymbol_type_tab( ).
+
+
+        mo_cut->map_symbols_send(
+          EXPORTING
+            contract_code        = |213217094|
+            storage_code         = |1|
+            decade               = 1
+            in_coordinate_system = |EUREF|
+          IMPORTING
+            map_symbols          = lt_actual_map_symbols
+        ).
+
+
+**Make sure it returns Data
+        assert_table_hasrecords(
+          EXPORTING
+            it_table = lt_actual_map_symbols
+        ).
+
+**Make sure that it contains the data right!
+        DATA(ls_line) =  VALUE #( mt_mock_symbols[ symbol_id = |0000128542| ] ).
+        cl_abap_unit_assert=>assert_table_contains( table = lt_actual_map_symbols line = ls_line msg = | Data should match | ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        fail_exception( io_exception = lo_exception ).
+    ENDTRY.
+  ENDMETHOD.
+
+
+  METHOD map_symb_send_euref_no_stcode.
+ TRY.
+        DATA(lt_actual_map_symbols) = VALUE zprmapsymbol_type_tab( ).
+
+
+        mo_cut->map_symbols_send(
+          EXPORTING
+            contract_code        = |213217094|
+            storage_code         = ||
+            decade               = 1
+            in_coordinate_system = |EUREF|
+          IMPORTING
+            map_symbols          = lt_actual_map_symbols
+        ).
+
+
+**Make sure it returns Data
+        assert_table_hasrecords(
+          EXPORTING
+            it_table = lt_actual_map_symbols
+        ).
+
+**Make sure that it contains the data right!
+        DATA(ls_line) =  VALUE #( mt_mock_symbols[ symbol_id = |0000142746| ] ).
+        cl_abap_unit_assert=>assert_table_contains( table = lt_actual_map_symbols line = ls_line msg = | Data should match | ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        fail_exception( io_exception = lo_exception ).
+    ENDTRY.
+  ENDMETHOD.
+
+*******************************************************************************
+** Test with coordinate system KKJ(Finnish Standard) thows spatial error!
+** For more details please see the JIRA story
+** https://jira.shared.tds.metsagroup.com/secure/RapidBoard.jspa?rapidView=553&view=detail&selectedIssue=MFORT-21002
+*******************************************************************************
+  METHOD map_symbols_send_kkj.
+    TRY.
+        DATA(lt_actual_map_symbols) = VALUE zprmapsymbol_type_tab( ).
+
+
+        mo_cut->map_symbols_send(
+          EXPORTING
+            contract_code        = |213217094|
+            storage_code         = |1|
+            decade               = 1
+            in_coordinate_system = |KKJ|
+          IMPORTING
+            map_symbols          = lt_actual_map_symbols
+        ).
+
+
+**Make sure it returns Data
+        assert_table_hasrecords(
+          EXPORTING
+            it_table = lt_actual_map_symbols
+        ).
+
+**Make sure that it contains the data right!
+        DATA(ls_line) =  VALUE #( mt_mock_symbols[ symbol_id = |0000128542| ] ).
+        cl_abap_unit_assert=>assert_table_contains( table = lt_actual_map_symbols line = ls_line msg = | Data should match | ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+       fail_exception( io_exception = lo_exception ).
+    ENDTRY.
+  ENDMETHOD.
+
+
+  METHOD setup.
+    TRY.
+        mo_cut =  CAST zcl_gis_amdp_id408( zcl_gis_amdp_base=>get_instance( iv_id = '408'  ) ).
+
+        create_expectations( ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        cl_abap_unit_assert=>fail( 'Set up  has failed' ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD teardown.
+    CLEAR: mo_cut.
+    clear_expectations(  ).
+  ENDMETHOD.
+
+
+
+  METHOD clear_expectations.
+    CLEAR: mt_mock_symbols.
+
+  ENDMETHOD.
+
+  METHOD create_expectations.
+    DATA(lv_coordinates) = |479649 6889337 479935 6889406 479975 6889433|.
+    mt_mock_symbols = VALUE #(
+    ( symbol_id = |0000142746| symbol = '05' status = '2'  coordinates = |479525 6888776 479782 6888917|  coordinate_system = |EUREF| )
+    ( symbol_id = |0000128542| symbol = '03' status = '2'  coordinates = lv_coordinates  coordinate_system = |EUREF| )
+
+    ).
+
+  ENDMETHOD.
+
+
+
+
+ENDCLASS.

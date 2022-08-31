@@ -1,0 +1,83 @@
+*"* use this source file for your ABAP unit test classes
+*/**TESTING THE AMDP METHODS*/
+CLASS ltcl_tester DEFINITION FOR TESTING
+ INHERITING FROM zcl_gis_amdp_base_aunit
+  RISK LEVEL HARMLESS DURATION MEDIUM.
+
+  PUBLIC SECTION.
+    METHODS: create_expectations  REDEFINITION.
+    METHODS: clear_expectations REDEFINITION.
+
+  PROTECTED SECTION.
+
+
+  PRIVATE SECTION.
+    METHODS  GetWorkingSiteMapSymModify FOR TESTING RAISING cx_static_check.
+
+    METHODS:setup, teardown.
+    DATA: mo_cut TYPE REF TO zcl_gis_amdp_id869.
+    DATA:mt_mock_response_contracts  TYPE  ziidt_id869_msmod_gis_get_tab.
+ENDCLASS.
+
+
+CLASS ltcl_tester IMPLEMENTATION.
+
+
+*******************************************************************************
+** No DB Manipluations here
+*******************************************************************************
+  METHOD GetWorkingSiteMapSymModify.
+    DATA:  lt_actual_response_contracts  TYPE  ziidt_id869_msmod_gis_get_tab.
+
+    TRY.
+        mo_cut->getworkingsitemapsymmodify(
+          EXPORTING
+            start_time = |28.04.2015 14:30:00|
+            end_time   = |30.04.2015 14:30:00|
+          IMPORTING
+           response_contracts = lt_actual_response_contracts
+        ).
+
+
+**Make sure that data is returned back
+        DATA(lv_has_records) = check_table_has_records( it_table = lt_actual_response_contracts ).
+        assert_true( act = lv_has_records ).
+
+**Make sure that it contains the data right!
+**This test will not be accurate as the data might change so the test will fail as well
+*        DATA(ls_line) =  VALUE #( mt_mock_response_contracts[ contractid = 176115059 ]  OPTIONAL ).
+*        cl_abap_unit_assert=>assert_table_contains( table = lt_actual_response_contracts line = ls_line msg = | Should contain the right contract data| ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+**Make sure that it does not reach here
+       fail_exception(
+         EXPORTING
+           io_exception = lo_exception
+       ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD setup.
+    TRY.
+        mo_cut =  CAST zcl_gis_amdp_id869( zcl_gis_amdp_base=>get_instance( iv_id = '869'  ) ).
+       create_expectations(  ).
+      CATCH cx_root INTO DATA(lo_exception).
+        cl_abap_unit_assert=>fail( 'Set up  has failed' ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD teardown.
+    CLEAR: mo_cut.
+  ENDMETHOD.
+
+  METHOD clear_expectations.
+    CLEAR mt_mock_response_contracts.
+  ENDMETHOD.
+
+  METHOD create_expectations.
+    INSERT VALUE #( contractid = '176115059' contracttype ='H' decade ='1' blocknumber = 1 ) INTO TABLE mt_mock_response_contracts.
+
+  ENDMETHOD.
+
+
+ENDCLASS.

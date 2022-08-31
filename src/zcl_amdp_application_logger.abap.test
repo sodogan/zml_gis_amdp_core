@@ -1,0 +1,105 @@
+*"* use this source file for your ABAP unit test classes
+CLASS ltcl_tester DEFINITION FINAL FOR TESTING
+  DURATION SHORT
+  RISK LEVEL HARMLESS INHERITING FROM zcl_gis_amdp_base_aunit.
+  PUBLIC SECTION.
+    METHODS: zif_gis_amdp_expectations_unit~create_expectations REDEFINITION,
+      zif_gis_amdp_expectations_unit~clear_expectations REDEFINITION.
+
+  PRIVATE SECTION.
+    METHODS:  test_add_exception FOR TESTING RAISING cx_static_check.
+    METHODS:  test_add_free_text FOR TESTING RAISING cx_static_check.
+    METHODS:  test_add_bapiret2 FOR TESTING RAISING cx_static_check.
+    METHODS:setup,teardown.
+    CLASS-METHODS:class_setup,class_teardown.
+    DATA: mo_cut TYPE REF TO zif_amdp_logger.
+ENDCLASS.
+
+
+CLASS ltcl_tester IMPLEMENTATION.
+
+  METHOD test_add_free_text.
+    MESSAGE e003(zml_gis_amdp)  INTO DATA(lv_error_msg).
+    toggle_commit_on( ).
+
+    mo_cut->add_free_text(
+      EXPORTING
+        string = |Raised from unit testing | && lv_error_msg
+    ).
+    mo_cut->write_log( ).
+
+    commit_work( ).
+
+  ENDMETHOD.
+
+
+  METHOD test_add_exception.
+
+** Raise an exception object
+    TRY.
+        RAISE EXCEPTION TYPE zcx_unexpected_exception MESSAGE e001(zml_gis_amdp).
+
+        fail_test( iv_msg = |Failed raising exception object| ).
+      CATCH cx_root INTO DATA(lo_exception).
+*Log the code
+        toggle_commit_on( ).
+
+        mo_cut->add_exception(
+          EXPORTING
+            msgty     = 'E'
+            exception = lo_exception
+        ).
+
+        mo_cut->write_log( ).
+
+        commit_work( ).
+
+    ENDTRY.
+
+  ENDMETHOD.
+
+
+
+  METHOD test_add_bapiret2.
+
+*Log the code
+    toggle_commit_on( ).
+
+    mo_cut->add_bapiret2(
+      EXPORTING
+        bapiret2 = VALUE #(  ( id = 'zml_gis_amdp' number = '002' type = 'I'  message_v1 = '123'   ) ) ).
+    mo_cut->write_log( ).
+
+    commit_work( ).
+
+  ENDMETHOD.
+
+
+  METHOD class_setup.
+
+  ENDMETHOD.
+
+  METHOD class_teardown.
+
+  ENDMETHOD.
+
+  METHOD setup.
+    mo_cut = NEW zcl_amdp_application_logger( subobject = 'ZID231'  ).
+  ENDMETHOD.
+
+  METHOD teardown.
+    CLEAR: mo_cut.
+  ENDMETHOD.
+
+
+
+
+  METHOD zif_gis_amdp_expectations_unit~clear_expectations.
+
+  ENDMETHOD.
+
+  METHOD zif_gis_amdp_expectations_unit~create_expectations.
+
+  ENDMETHOD.
+
+ENDCLASS.

@@ -1,0 +1,194 @@
+*"* use this source file for your ABAP unit test classes
+*/**TESTING THE AMDP METHODS*/
+CLASS ltcl_tester DEFINITION FOR TESTING
+ INHERITING FROM zcl_gis_amdp_base_aunit
+  CREATE PROTECTED
+  RISK LEVEL HARMLESS.
+
+  PUBLIC SECTION.
+    METHODS: create_expectations  REDEFINITION.
+    METHODS: clear_expectations REDEFINITION.
+
+  PROTECTED SECTION.
+
+  PRIVATE SECTION.
+
+    METHODS  manage_storage_loc_no_coord FOR TESTING RAISING cx_static_check.
+    METHODS  manage_storage_loc_with_coord FOR TESTING RAISING cx_static_check.
+    METHODS:setup, teardown.
+    DATA: mo_cut TYPE REF TO zcl_gis_amdp_id409.
+
+
+ENDCLASS.
+
+
+CLASS ltcl_tester IMPLEMENTATION.
+
+
+************************************************************************************
+* This method contains Manipulation operations on DB(Insert,update) Be Aware
+* This method should  throw exception and if not so its a failure
+************************************************************************************
+  METHOD manage_storage_loc_no_coord.
+    TRY.
+*Switch on the commit
+        toggle_commit_on( ).
+
+        mo_cut->manage_storage_location(
+          EXPORTING
+            contract_number   = |251115152|
+            decade            = 1
+            storage_number    = |1|
+*           transport_condition   = ||
+*           transport_restriction = ||
+*           ploughing_need    = ||
+*           ploughing_name    = ||
+*           ploughing_phone   = ||
+*           ploughing_date    = ||
+            coordinate_system = |EUREF|
+            coordinates       = ||
+            in_action         = |INSERT|
+          IMPORTING
+            code              = DATA(lv_out_code)
+            out_action        = DATA(lv_out_action)
+            info              = DATA(lv_out_info)
+            status            = DATA(lv_out_status)
+        ).
+*Commit the work
+       commit_work( ).
+
+*Make sure that data is returned back
+        assert_match(
+          EXPORTING
+            exp = |2511151521|
+            act = lv_out_code
+        ).
+
+        assert_match(
+          EXPORTING
+            exp = |UPDATE|
+            act = lv_out_action
+        ).
+
+
+        assert_match(
+          EXPORTING
+            exp = |1 row(s) affected|
+            act = lv_out_info
+        ).
+
+
+        assert_match(
+          EXPORTING
+            exp = |OK|
+            act = lv_out_status
+        ).
+
+        toggle_commit_off(  ).
+
+**Make sure that it contains the data right!
+*        DATA(ls_line) =  VALUE #( mt_mock_routes[ contractid = 22370496 ] ).
+*        cl_abap_unit_assert=>assert_table_contains( table = lt_actual_routes line = ls_line msg = | Data should match | ).
+*
+      CATCH cx_root INTO DATA(lo_exception).
+        fail_exception( io_exception = lo_exception ).
+    ENDTRY.
+  ENDMETHOD.
+
+
+  METHOD manage_storage_loc_with_coord.
+
+  TRY.
+*Switch on the commit
+        toggle_commit_on( ).
+
+        mo_cut->manage_storage_location(
+          EXPORTING
+            contract_number   = |251115152|
+            decade            = 1
+            storage_number    = |1|
+*           transport_condition   = ||
+*           transport_restriction = ||
+*           ploughing_need    = ||
+*           ploughing_name    = ||
+*           ploughing_phone   = ||
+*           ploughing_date    = ||
+            coordinate_system = |EUREF|
+            coordinates       = |240377.48953756283 6820333.000411826|
+            in_action         = |UPDATE|
+          IMPORTING
+            code              = DATA(lv_out_code)
+            out_action        = DATA(lv_out_action)
+            info              = DATA(lv_out_info)
+            status            = DATA(lv_out_status)
+        ).
+*Commit the work
+       commit_work( ).
+
+*Make sure that data is returned back
+        assert_match(
+          EXPORTING
+            exp = |2511151521|
+            act = lv_out_code
+        ).
+
+        assert_match(
+          EXPORTING
+            exp = |UPDATE|
+            act = lv_out_action
+        ).
+
+
+        assert_match(
+          EXPORTING
+            exp = |1 row(s) affected|
+            act = lv_out_info
+        ).
+
+
+        assert_match(
+          EXPORTING
+            exp = |OK|
+            act = lv_out_status
+        ).
+
+        toggle_commit_off(  ).
+
+**Make sure that it contains the data right!
+*        DATA(ls_line) =  VALUE #( mt_mock_routes[ contractid = 22370496 ] ).
+*        cl_abap_unit_assert=>assert_table_contains( table = lt_actual_routes line = ls_line msg = | Data should match | ).
+*
+      CATCH cx_root INTO DATA(lo_exception).
+        fail_exception( io_exception = lo_exception ).
+    ENDTRY.
+  ENDMETHOD.
+
+
+  METHOD setup.
+    TRY.
+        mo_cut =  CAST zcl_gis_amdp_id409( zcl_gis_amdp_base=>get_instance( iv_id = '409'  ) ).
+
+        create_expectations( ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        cl_abap_unit_assert=>fail( 'Set up  has failed' ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD teardown.
+    CLEAR: mo_cut.
+    clear_expectations(  ).
+  ENDMETHOD.
+
+
+
+  METHOD clear_expectations.
+
+  ENDMETHOD.
+
+  METHOD create_expectations.
+
+  ENDMETHOD.
+
+
+ENDCLASS.

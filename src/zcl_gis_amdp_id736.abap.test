@@ -1,0 +1,130 @@
+*"* use this source file for your ABAP unit test classes
+*/**TESTING THE AMDP METHODS*/
+CLASS ltcl_tester DEFINITION FOR TESTING
+ INHERITING FROM zcl_gis_amdp_base_aunit
+  RISK LEVEL HARMLESS.
+
+  PUBLIC SECTION.
+    METHODS: create_expectations  REDEFINITION.
+    METHODS: clear_expectations REDEFINITION.
+
+  PROTECTED SECTION.
+
+
+  PRIVATE SECTION.
+    METHODS  save_for_harvesting_wrong FOR TESTING RAISING cx_static_check.
+    METHODS  save_for_silviculture FOR TESTING RAISING cx_static_check.
+    METHODS  save_for_harvesting FOR TESTING RAISING cx_static_check.
+    METHODS:setup, teardown.
+    DATA: mo_cut TYPE REF TO zcl_gis_amdp_id736.
+ENDCLASS.
+
+
+CLASS ltcl_tester IMPLEMENTATION.
+
+
+************************************************************************************
+* This method contains Manipulation operations on DB(Insert,update) Be Aware
+* This method should  throw exception and if not so its a failure
+************************************************************************************
+  METHOD save_for_harvesting_wrong.
+    DATA: lt_actual_request_storages TYPE  zdt_id736_gis_wsou_save_tab.
+    TRY.
+** Turn on the commit on
+        toggle_commit_on(  ).
+        DATA(lv_geometry) = '240377.48953756283 6820333.000411826'.
+        mo_cut->saveworkingsiteoperationalup_h(
+          EXPORTING
+            contractid       = '12122'
+            blocknumber      = 1
+            decade           = '1'
+            request_storages = VALUE #( ( storagenumber = 1 geometry = lv_geometry storageinfo = 'test' ) )
+        ).
+*Commit
+        commit_work(  ).
+
+        fail_test( |Exception should be thrown and It should not reach here | ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        ROLLBACK WORK.
+        DATA(lv_error_text) = lo_exception->get_text(  ).
+
+    ENDTRY.
+  ENDMETHOD.
+************************************************************************************
+* This method contains Manipulation operations on DB(Insert,update) Be Aware
+* This method should not throw exception and if so its a failure
+************************************************************************************
+  METHOD save_for_silviculture.
+    DATA: lt_actual_request_storages TYPE  zdt_id736_gis_wsou_save_tab.
+    TRY.
+** Turn on the commit on
+        toggle_commit_on(  ).
+        mo_cut->saveworkingsiteoperationalup_s(
+          EXPORTING
+            contractid       = '12122'
+            blocknumber      = 1
+            decade           = '1'
+            request_storages = lt_actual_request_storages
+        ).
+
+
+*Commit
+        commit_work(  ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        ROLLBACK WORK.
+        fail_test( |Exception: { lo_exception->get_text(  ) }  | ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD save_for_harvesting.
+    DATA: lt_actual_request_storages TYPE  zdt_id736_gis_wsou_save_tab.
+    TRY.
+** Turn on the commit on
+        toggle_commit_on(  ).
+
+        lt_actual_request_storages = VALUE #( ( storageinfo = 'TestfromABAP' storagenumber = 1  geometry =  '240377.48953756283 6820333.000411826'  )  ).
+        mo_cut->saveworkingsiteoperationalup_h(
+          EXPORTING
+            contractid       = '849115011'
+            blocknumber      = 1
+            decade           = '1'
+            request_storages = lt_actual_request_storages
+        ).
+
+
+*Commit
+        commit_work(  ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        ROLLBACK WORK.
+        fail_test( |Exception: { lo_exception->get_text(  ) }  | ).
+    ENDTRY.
+  ENDMETHOD.
+
+
+  METHOD setup.
+    TRY.
+        mo_cut =  CAST zcl_gis_amdp_id736( zcl_gis_amdp_base=>get_instance( iv_id = '736'  ) ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        cl_abap_unit_assert=>fail( 'Set up  has failed' ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD teardown.
+    CLEAR: mo_cut.
+  ENDMETHOD.
+
+  METHOD clear_expectations.
+
+  ENDMETHOD.
+
+  METHOD create_expectations.
+
+  ENDMETHOD.
+
+
+
+ENDCLASS.

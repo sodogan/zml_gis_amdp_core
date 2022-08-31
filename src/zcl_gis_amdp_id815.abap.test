@@ -1,0 +1,163 @@
+*"* use this source file for your ABAP unit test classes
+*/**TESTING THE AMDP METHODS*/
+CLASS ltcl_tester DEFINITION FOR TESTING
+ INHERITING FROM zcl_gis_amdp_base_aunit
+  RISK LEVEL HARMLESS.
+
+  PUBLIC SECTION.
+    METHODS: create_expectations  REDEFINITION.
+    METHODS: clear_expectations REDEFINITION.
+
+  PROTECTED SECTION.
+
+
+  PRIVATE SECTION.
+    METHODS  save_actual_block_no_data FOR TESTING RAISING cx_static_check.
+    METHODS  save_actual_block FOR TESTING RAISING cx_static_check.
+    METHODS  save_actual_block_deep FOR TESTING RAISING cx_static_check.
+    METHODS:setup, teardown.
+    DATA: mo_cut TYPE REF TO zcl_gis_amdp_id815.
+    DATA:mt_mock_unfulfilledarea TYPE ziidt_id815_wse_gis_save__tab.
+    DATA:mt_mock_fulfilledarea  TYPE ziidt_id815_wse_gis_save_tab1.
+ENDCLASS.
+
+
+CLASS ltcl_tester IMPLEMENTATION.
+
+
+*******************************************************************************
+** Please be aware that this method contains DB Manipulation(Insert/Delete)!
+*******************************************************************************
+  METHOD save_actual_block_no_data.
+
+    TRY.
+        DATA(lt_unfulfilledarea) = VALUE ziidt_id815_wse_gis_save__tab( ).
+        DATA(lt_fulfilledarea) = VALUE ziidt_id815_wse_gis_save_tab1( ).
+
+
+** Turn on the commit on
+        toggle_commit_on(  ).
+
+        mo_cut->saveworkingsiteendnotification(
+          EXPORTING
+            contractid      = |4345381611|
+            decade          = '1'
+            blocknumber     = 1
+            fulfilledarea   = lt_fulfilledarea
+            unfulfilledarea = lt_unfulfilledarea
+        ).
+
+**Make sure that it does not reach here
+        fail_test( |This test should not reach here  | ).
+
+**Make sure that it contains the data right!
+*        DATA(ls_line) =  VALUE #( mt_mock_stands_table[ stand_number = 22370496 ] ).
+*       cl_abap_unit_assert=>assert_table_contains( table = lt_actual_stands line = ls_line msg = | Should pass| ).
+
+** Turn on the commit off
+        toggle_commit_off(  ).
+      CATCH cx_root INTO DATA(lo_exception).
+        DATA(lv_error_msg) = lo_exception->get_text(  ).
+        assert_true( act = abap_true ).
+    ENDTRY.
+  ENDMETHOD.
+
+*******************************************************************************
+** Please be aware that this method contains DB Manipulation(Insert/Delete)!
+*******************************************************************************
+  METHOD save_actual_block.
+    DATA(lt_actual_fulfilledarea) = VALUE ziidt_id815_wse_gis_save_tab1( ( fulfilledarea = '240377.48953756283 6820333.000411826'   fulfilledareavariant = 'pP' supported = 0   ) ).
+    DATA(lt_actual_unfulfilledarea) = VALUE ziidt_id815_wse_gis_save__tab( ( unfulfilledarea = '240377.48953756283 6820333.000411826'   unfulfilledareavariant = 'pP'  ) ).
+
+    TRY.
+
+** Turn on the commit on
+        toggle_commit_on(  ).
+
+        mo_cut->saveworkingsiteendnotification(
+          EXPORTING
+            contractid      = |499213126|
+            decade          = '1'
+            blocknumber     = 1
+            fulfilledarea   = lt_actual_fulfilledarea
+            unfulfilledarea = lt_actual_unfulfilledarea
+        ).
+
+        commit_work(  ).
+
+        DATA(ls_line) =  VALUE #( mt_mock_fulfilledarea[ fulfilledareavariant = 'pP' ] ).
+        cl_abap_unit_assert=>assert_table_contains( table = lt_actual_fulfilledarea line = ls_line msg = | Should pass| ).
+
+
+**Make sure that it contains the data right!
+*        DATA(ls_line) =  VALUE #( mt_mock_stands_table[ stand_number = 22370496 ] ).
+*       cl_abap_unit_assert=>assert_table_contains( table = lt_actual_stands line = ls_line msg = | Should pass| ).
+
+** Turn on the commit off
+        toggle_commit_off(  ).
+      CATCH cx_root INTO DATA(lo_exception).
+        fail_exception( lo_exception ).
+    ENDTRY.
+  ENDMETHOD.
+
+*******************************************************************************
+** Please be aware that this method contains DB Manipulation(Insert/Delete)!
+*******************************************************************************
+  METHOD save_actual_block_deep.
+
+    DATA(lt_actual_fulfilledarea) = VALUE ziidt_id815_wse_gis_save_tab1( ( fulfilledarea = '240377.48953756283 6820333.000411826'   fulfilledareavariant = 'pP' supported = 0   ) ).
+    DATA(lt_actual_unfulfilledarea) = VALUE ziidt_id815_wse_gis_save__tab( ( unfulfilledarea = '240377.48953756283 6820333.000411826'   unfulfilledareavariant = 'pP'  ) ).
+
+    TRY.
+** Turn on the commit on
+        toggle_commit_on(  ).
+
+        mo_cut->saveworkingsiteendnotification(
+          EXPORTING
+            contractid      = |698217062|
+            decade          = '1'
+            blocknumber     = 1
+            fulfilledarea   = lt_actual_fulfilledarea
+            unfulfilledarea = lt_actual_unfulfilledarea
+        ).
+
+        commit_work(  ).
+
+**Make sure that it contains the data right!
+
+        DATA(ls_line) =  VALUE #( mt_mock_fulfilledarea[ fulfilledareavariant = 'pP' ] ).
+        cl_abap_unit_assert=>assert_table_contains( table = lt_actual_fulfilledarea line = ls_line msg = | Should pass| ).
+
+** Turn on the commit off
+        toggle_commit_off(  ).
+      CATCH cx_root INTO DATA(lo_exception).
+        fail_exception( lo_exception )."
+    ENDTRY.
+  ENDMETHOD.
+
+
+  METHOD setup.
+    TRY.
+        mo_cut =  CAST zcl_gis_amdp_id815( zcl_gis_amdp_base=>get_instance( iv_id = '815'  ) ).
+
+        create_expectations( ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        cl_abap_unit_assert=>fail( 'Set up  has failed' ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD teardown.
+    CLEAR: mo_cut.
+  ENDMETHOD.
+
+  METHOD clear_expectations.
+    CLEAR: mt_mock_fulfilledarea, mt_mock_unfulfilledarea.
+  ENDMETHOD.
+
+  METHOD create_expectations.
+    mt_mock_fulfilledarea =  VALUE #( ( fulfilledarea = '240377.48953756283 6820333.000411826' fulfilledareavariant = 'pP' ) ).
+    mt_mock_unfulfilledarea =  VALUE #( ( unfulfilledarea = '240377.48953756283 6820333.000411826' unfulfilledareavariant = 'pP' ) ).
+  ENDMETHOD.
+
+ENDCLASS.

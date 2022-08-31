@@ -1,0 +1,83 @@
+*"* use this source file for your ABAP unit test classes
+*/**TESTING THE AMDP METHODS*/
+CLASS ltcl_tester DEFINITION FOR TESTING
+ INHERITING FROM zcl_gis_amdp_base_aunit
+  RISK LEVEL HARMLESS.
+
+  PUBLIC SECTION.
+    METHODS: create_expectations  REDEFINITION.
+    METHODS: clear_expectations REDEFINITION.
+
+  PROTECTED SECTION.
+
+
+  PRIVATE SECTION.
+    METHODS  GetWorkingSiteMapSymMod_harv FOR TESTING RAISING cx_static_check.
+    METHODS:setup, teardown.
+    DATA: mo_cut TYPE REF TO zcl_gis_amdp_id902.
+    DATA: mt_mock_images type  ZIIDT_ID902_MS_GIS_IMAGE__TAB.
+ENDCLASS.
+
+
+CLASS ltcl_tester IMPLEMENTATION.
+
+
+*******************************************************************************
+** Please be aware of the Time Format
+*******************************************************************************
+  METHOD GetWorkingSiteMapSymMod_harv.
+    DATA:  lt_actual_images  TYPE  ZIIDT_ID902_MS_GIS_IMAGE__TAB
+            .
+
+    TRY.
+      mo_cut->getworkingsiteimages(
+       EXPORTING
+            in_contractid   = |77216053|
+            in_blocknumber  = 1
+            in_decade       = '1'
+        IMPORTING
+         out_contractid   = DATA(lv_contractid_out)
+         out_blocknumber  = DATA(lv_blocknumber_out)
+         images          =  lt_actual_images
+      ).
+
+
+
+**Make sure that data is returned back
+        DATA(lv_has_records) = check_table_has_records( it_table = lt_actual_images ).
+        assert_true( act = lv_has_records ).
+
+**Make sure that it contains the data right!
+       DATA(ls_line) =  VALUE #( mt_mock_images[ mapsymbolid = 77216053 ] ).
+       cl_abap_unit_assert=>assert_table_contains( table = lt_actual_images line = ls_line msg = | Should pass| ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+**Make sure that it does not reach here
+        fail_exception( io_exception = lo_exception ).
+    ENDTRY.
+  ENDMETHOD.
+
+
+
+  METHOD setup.
+    TRY.
+        mo_cut =  CAST zcl_gis_amdp_id902( zcl_gis_amdp_base=>get_instance( iv_id = '902'  ) ).
+      CATCH cx_root INTO DATA(lo_exception).
+        cl_abap_unit_assert=>fail( 'Set up  has failed' ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD teardown.
+    CLEAR: mo_cut.
+  ENDMETHOD.
+
+  METHOD clear_expectations.
+   clear mt_mock_images.
+  ENDMETHOD.
+
+  METHOD create_expectations.
+* insert value #( contractid = '' contracttype ='H' decade ='' blocknumber = 1 ) into TABLE mt_mock_images.
+
+  ENDMETHOD.
+
+ENDCLASS.

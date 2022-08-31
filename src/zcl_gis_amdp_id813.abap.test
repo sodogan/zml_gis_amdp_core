@@ -1,0 +1,130 @@
+*"* use this source file for your ABAP unit test classes
+*/**TESTING THE AMDP METHODS*/
+CLASS ltcl_tester DEFINITION FOR TESTING
+ INHERITING FROM zcl_gis_amdp_base_aunit
+  RISK LEVEL HARMLESS.
+
+
+  PUBLIC SECTION.
+    METHODS: create_expectations  REDEFINITION.
+    METHODS: clear_expectations REDEFINITION.
+
+  PROTECTED SECTION.
+
+
+  PRIVATE SECTION.
+    METHODS  GetWorkingSiteMapSymbol_ext FOR TESTING RAISING cx_static_check.
+    METHODS  GetWorkingSiteMapSymbol FOR TESTING RAISING cx_static_check.
+    METHODS:setup, teardown.
+    DATA: mo_cut              TYPE REF TO zcl_gis_amdp_id813,
+          mt_mock_response    TYPE ziidt_id813_ms_gis_get_re_tab,
+          mt_mock_spare_trees TYPE ziidt_id813_ms_gis_get_r_tab1.
+ENDCLASS.
+
+
+CLASS ltcl_tester IMPLEMENTATION.
+
+
+
+  METHOD GetWorkingSiteMapSymbol.
+
+    DATA: lt_actual_response    TYPE ziidt_id813_ms_gis_get_re_tab,
+          lt_actual_spare_trees TYPE ziidt_id813_ms_gis_get_r_tab1.
+
+    TRY.
+**Currently Tests fail as the featuecode can be a string or a int value and needs to be solved!
+        mo_cut->getworkingsitemapsymbol(
+          EXPORTING
+            contractid  = |434538161|
+            decade      = '1'
+            blocknumber =  1
+          IMPORTING
+            response    = lt_actual_response
+            spare_trees = lt_actual_spare_trees
+        ).
+
+**Make sure that data is returned back
+        DATA(lv_has_records) = check_table_has_records( it_table = lt_actual_response ).
+        assert_true( act = lv_has_records ).
+
+
+
+**Make sure that it contains the data right!
+        DATA(ls_line) =  VALUE #( mt_mock_response[ contractid = 434538161 ] ).
+        cl_abap_unit_assert=>assert_table_contains( table = lt_actual_response line = ls_line msg = | Should pass| ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        fail_test( |Exception: { lo_exception->get_text(  ) }  | ).
+    ENDTRY.
+
+
+  ENDMETHOD.
+
+  METHOD getworkingsitemapsymbol_ext.
+DATA: lt_actual_response    TYPE ziidt_id813_ms_gis_get_re_tab,
+          lt_actual_spare_trees TYPE ziidt_id813_ms_gis_get_r_tab1.
+
+    TRY.
+**Currently Tests fail as the featuecode can be a string or a int value and needs to be solved!
+        mo_cut->getworkingsitemapsymbol(
+          EXPORTING
+            contractid  = |777111005|
+            decade      = '2'
+            blocknumber =  1
+          IMPORTING
+            response    = lt_actual_response
+            spare_trees = lt_actual_spare_trees
+        ).
+
+**Make sure that data is returned back
+        DATA(lv_has_records) = check_table_has_records( it_table = lt_actual_response ).
+        assert_true( act = lv_has_records ).
+
+        lv_has_records = check_table_has_records( it_table = lt_actual_spare_trees ).
+        assert_true( act = lv_has_records ).
+
+
+**Make sure that it contains the data right!
+*        DATA(ls_line) =  VALUE #( mt_mock_stands_table[ stand_number = 22370496 ] ).
+*        cl_abap_unit_assert=>assert_table_contains( table = lt_actual_stands line = ls_line msg = | Should pass| ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        fail_test( |Exception: { lo_exception->get_text(  ) }  | ).
+    ENDTRY.
+
+  ENDMETHOD.
+
+  METHOD setup.
+    TRY.
+        mo_cut =  CAST zcl_gis_amdp_id813( zcl_gis_amdp_base=>get_instance( iv_id = '813'  ) ).
+
+        create_expectations(  ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        cl_abap_unit_assert=>fail( 'Set up  has failed' ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD teardown.
+  ENDMETHOD.
+
+  METHOD clear_expectations.
+    CLEAR: mt_mock_response, mt_mock_spare_trees.
+  ENDMETHOD.
+
+  METHOD create_expectations.
+**The expectations are quite many-so we skip entering all these values here!
+   DATA(lv_geometry) = |<GEOMETRY>450168.36614 6708550.00023 450169.228226 6708511.20641 450145.951935 6708474.136765</GEOMETRY><VARIANT_NAME>lSP</VARIANT_NAME>|.
+    mt_mock_response = VALUE #(  ( contractid = '434538161'
+                                   blocknumber = '1'
+                                   mapsymbolid = '9015184'
+                                   featurecode = '10017' featureinfo = 'LÄHESTYMISSUUNTA, Vp3'
+                                   geometry = lv_geometry  canmodify = 'K' amountofmapsymbols = '6' updatedtime =
+'01.10.2018 15:46:23' ) ).
+    mt_mock_spare_trees = VALUE #(  ).
+
+  ENDMETHOD.
+
+
+
+ENDCLASS.

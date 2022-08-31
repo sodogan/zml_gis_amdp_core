@@ -1,0 +1,205 @@
+*"* use this source file for your ABAP unit test classes
+*/**TESTING THE AMDP METHODS*/
+CLASS ltcl_tester DEFINITION FOR TESTING
+ INHERITING FROM zcl_gis_amdp_base_aunit
+  CREATE PROTECTED
+  RISK LEVEL HARMLESS.
+
+  PUBLIC SECTION.
+    METHODS: create_expectations  REDEFINITION.
+    METHODS: clear_expectations REDEFINITION.
+
+  PROTECTED SECTION.
+
+  PRIVATE SECTION.
+    METHODS  save_kemera_decision FOR TESTING RAISING cx_static_check.
+    METHODS  save_kemera_completion_declare FOR TESTING RAISING cx_static_check.
+    METHODS:setup, teardown.
+    DATA: mo_cut TYPE REF TO zcl_gis_amdp_id1174.
+ENDCLASS.
+
+
+CLASS ltcl_tester IMPLEMENTATION.
+
+
+*******************************************************************************
+** Please be aware that this method contains DB Manipulation(Insert/Delete)!
+*******************************************************************************
+  METHOD save_kemera_decision.
+    DATA(lt_decision_geometries)  = VALUE zprdtid1174_gis_save_kem_tab1( ).
+    DATA(lt_point_properties)  = VALUE zprdtid1174_point_property_tt( ).
+    DATA(lt_line_string_properties)  = VALUE zprdtid1174_linestringprope_tt( ).
+    DATA(lt_polygon_properties)  = VALUE zprdtid1174_polygonproperty_tt( ).
+    DATA(lt_exterior)  = VALUE zprdtid1174_xterior_tt( ).
+    DATA(lt_exterior_ring_curve_member)  = VALUE zprdtid1174_ring_curve_mem_tt( ).
+
+
+    DATA(lt_exterior_linear_ring_pos) = VALUE zprdtid1174_lring_pos_tt( ).
+
+    DATA(lt_ext_linear_ring_pointprps) = VALUE zprdtid1174_lring_pointprop_tt( ).
+    DATA(lt_ext_linear_ring_pointreps) = VALUE zprdtid1174_lring_pointreps_tt( ).
+
+    DATA(lt_interior)  = VALUE zprdtid1174_xterior_tab( ).
+    DATA(lt_works)  = VALUE zprdtid1174_gis_save_keme_tab( ).
+
+
+    TRY.
+** Turn on the commit on
+        toggle_commit_on(  ).
+
+        APPEND VALUE #( case_number =   |11-2018-10165|
+                       stand_number_extension   =   |123|
+                       stand_number   =    |1|
+                       stand_reference   =    |M-G20190000000061KMR|
+                       stand_id   =   |6985237|
+                       cost_type  =    |324|
+                       geoloc  =  |POLYGON ((355798.2080001831 6986251.550003052, 355798.0660018921 6986244.175003052, 355810.9649963379| &&
+                                  | 6986226.4599990845, 355823.5299987793 6986220.035003662, 355834.59400177 6986218.943000793, 355852.21199798584| &&
+                                  | 6986221.503997803, 355875.1190032959 6986230.556999207, 355882.2990036011 6986231.7900009155, 355892.1309967041| &&
+                                  | 6986229.98500061, 355890.85399627686 6986237.4459991455, 355899.73600006104 6986237.861000061, 355902.5400009155| &&
+                                  | 6986239.612998962, 355914.48500061035 6986242.5400009155, 355926.65799713135 6986242.156997681, 355938.81199645996| &&
+                                  | 6986239.483001709, 355950.44899749756 6986235.541999817, 355963.11499786377 6986233.372001648, 355976.04499816895| &&
+                                  | 6986232.471000671, 355987.4889984131 6986236.166999817, 355999.6959991455 6986240.111000061, 356008.71600341797| &&
+                                  | 6986243.54599762, 356011.3990020752 6986244.568000793, 356022.61000061035 6986250.81199646, 356025.24600219727| &&
+                                  | 6986263.254997253, 356035.7070007324 6986271.033996582, 356043.3929977417 6986280.625, 356036.12200164795| &&
+                                  | 6986291.391998291, 356032.6900024414 6986303.306999207, 356003.0070037842 6986298.553001404, 355980.59899902344| &&
+                                  | 6986305.896003723, 355946.0729980469 6986320.069000244, 355890.1910018921 6986371.903999329, 355882 6986366, 355879.7279968262| &&
+                                  | 6986366.878997803, 355872.08699798584 6986358.602996826, 355868.27600097656 6986349.7129974365, 355860.25399780273| &&
+                                  | 6986308.793998718, 355854.87200164795 6986300.9599990845, 355839.4570007324 6986289.566001892, 355812.2249984741| &&
+                                  | 6986285.477996826, 355807 6986283, 355806.5049972534 6986275.649002075, 355798.2080001831 6986251.550003052))|
+                        ) TO lt_decision_geometries.
+
+        lt_works  = VALUE #( ( work_code = |30| work_code_group = |30| case_number = |11-2018-10165| ) ).
+
+
+        mo_cut->save_kemera_decision(
+          EXPORTING
+            in_case_number      = |11-2018-10165|
+            case_date           = |2018-07-04|
+            decision_number     = |11-2018-10165-P9-2|
+            decision_date       = |2018-07-20|
+            decision_geometries = lt_decision_geometries
+            works               = lt_works
+            action              = |1|
+*           point_properties    = lt_point_properties
+*           line_string_properties         = lt_line_string_properties
+*           polygon_properties  = lt_polygon_properties
+*           exterior            = lt_exterior
+*           exterior_ring_curve_member     = lt_exterior_ring_curve_member
+*           exterior_linear_ring_pos       = lt_exterior_linear_ring_pos
+*           exterior_linear_ring_pointprps = lt_ext_linear_ring_pointprps
+*           exterior_linear_ring_pointreps = lt_ext_linear_ring_pointreps
+*           interior            = lt_interior
+          IMPORTING
+            out_case_number     = DATA(lv_out_case_number)
+            out_action          = DATA(lv_out_action)
+            infotext            = DATA(lv_out_infotext)
+        ).
+
+        commit_work(  ).
+**Make sure that it contains the data right!
+        assert_match(
+          EXPORTING
+            exp = |11-2018-10165|
+            act = lv_out_case_number
+            msg = |Case numbers should match|
+        ).
+         assert_match(
+          EXPORTING
+            exp = |1|
+            act = lv_out_action
+            msg = |Action must be insertupdate|
+        ).
+
+         assert_match(
+          EXPORTING
+            exp = |OK|
+            act = lv_out_infotext
+            msg = |Info must be OK|
+        ).
+
+
+** Turn on the commit off
+        toggle_commit_off(  ).
+      CATCH cx_root INTO DATA(lo_exception).
+        fail_exception( io_exception = lo_exception ).
+    ENDTRY.
+  ENDMETHOD.
+
+
+  METHOD save_kemera_completion_declare.
+    DATA(lt_actual_completionstands) = VALUE zprdtid1175_gis_save_kemera_tt( ).
+    TRY.
+** Turn on the commit on
+        toggle_commit_on(  ).
+
+        lt_actual_completionstands = VALUE #( ( financing_actnumber = |11-2018-24014|
+                                                cost_type = |324|
+                                                stand_number = |1|
+                                                stand_reference = |M-G20190000007208KMR|
+                                                status = |1|
+                                                geoloc  =  |POLYGON ((355798.2080001831 6986251.550003052, 355798.0660018921 6986244.175003052, 355810.9649963379| &&
+                                              | 6986226.4599990845, 355823.5299987793 6986220.035003662, 355834.59400177 6986218.943000793, 355852.21199798584| &&
+                                              | 6986221.503997803, 355875.1190032959 6986230.556999207, 355882.2990036011 6986231.7900009155, 355892.1309967041| &&
+                                              | 6986229.98500061, 355890.85399627686 6986237.4459991455, 355899.73600006104 6986237.861000061, 355902.5400009155| &&
+                                              | 6986239.612998962, 355914.48500061035 6986242.5400009155, 355926.65799713135 6986242.156997681, 355938.81199645996| &&
+                                              | 6986239.483001709, 355950.44899749756 6986235.541999817, 355963.11499786377 6986233.372001648, 355976.04499816895| &&
+                                              | 6986232.471000671, 355987.4889984131 6986236.166999817, 355999.6959991455 6986240.111000061, 356008.71600341797| &&
+                                              | 6986243.54599762, 356011.3990020752 6986244.568000793, 356022.61000061035 6986250.81199646, 356025.24600219727| &&
+                                              | 6986263.254997253, 356035.7070007324 6986271.033996582, 356043.3929977417 6986280.625, 356036.12200164795| &&
+                                              | 6986291.391998291, 356032.6900024414 6986303.306999207, 356003.0070037842 6986298.553001404, 355980.59899902344| &&
+                                              | 6986305.896003723, 355946.0729980469 6986320.069000244, 355890.1910018921 6986371.903999329, 355882 6986366, 355879.7279968262| &&
+                                              | 6986366.878997803, 355872.08699798584 6986358.602996826, 355868.27600097656 6986349.7129974365, 355860.25399780273| &&
+                                              | 6986308.793998718, 355854.87200164795 6986300.9599990845, 355839.4570007324 6986289.566001892, 355812.2249984741| &&
+                                              | 6986285.477996826, 355807 6986283, 355806.5049972534 6986275.649002075, 355798.2080001831 6986251.550003052))|
+               ) ).
+
+        mo_cut->save_kemera_completion_declare(
+          EXPORTING
+            financing_actnumber            = |11-2018-24014|
+            completion_dec_ref             = ||
+            work_code                      = ||
+            decision_date                  = |2018-07-20|
+            sent_date                      = |2018-09-20|
+            start_date                     = ||
+            end_date                       = ||
+            financing_act_completionstands = lt_actual_completionstands
+        ).
+
+
+        commit_work(  ).
+**Make sure that it contains the right data, as no output to compare
+**This step needs to be done manually via checking the database
+
+** Turn on the commit off
+        toggle_commit_off(  ).
+      CATCH cx_root INTO DATA(lo_exception).
+        fail_exception( io_exception = lo_exception ).
+    ENDTRY.
+  ENDMETHOD.
+
+
+
+  METHOD setup.
+    TRY.
+        mo_cut =  CAST zcl_gis_amdp_id1174( zcl_gis_amdp_base=>get_instance( iv_id = '1174'  ) ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        cl_abap_unit_assert=>fail( 'Set up  has failed' ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD teardown.
+    CLEAR: mo_cut.
+  ENDMETHOD.
+
+  METHOD clear_expectations.
+
+  ENDMETHOD.
+
+  METHOD create_expectations.
+
+  ENDMETHOD.
+
+
+ENDCLASS.

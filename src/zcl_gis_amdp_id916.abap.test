@@ -1,0 +1,118 @@
+*"* use this source file for your ABAP unit test classes
+*/**TESTING THE AMDP METHODS*/
+CLASS ltcl_tester DEFINITION FOR TESTING
+ INHERITING FROM zcl_gis_amdp_base_aunit
+  CREATE PROTECTED
+  RISK LEVEL HARMLESS.
+
+  PUBLIC SECTION.
+    METHODS: create_expectations  REDEFINITION.
+    METHODS: clear_expectations REDEFINITION.
+
+  PROTECTED SECTION.
+
+  PRIVATE SECTION.
+    METHODS  saveresource_action_1 FOR TESTING RAISING cx_static_check.
+    METHODS  saveresource_action_2 FOR TESTING RAISING cx_static_check.
+    METHODS:setup, teardown.
+    DATA: mo_cut TYPE REF TO zcl_gis_amdp_id916.
+ENDCLASS.
+
+
+CLASS ltcl_tester IMPLEMENTATION.
+
+
+*******************************************************************************
+** Please be aware that this method contains DB Manipulation(Insert/Delete)!
+*******************************************************************************
+  METHOD saveresource_action_1.
+
+    TRY.
+** Turn on the commit on
+        toggle_commit_on(  ).
+
+        mo_cut->saveresource(
+          EXPORTING
+            in_resourceid     = |3087671|
+            contractors    = VALUE #( )
+            owncontid      = |XFI26845335|
+            resourceid_sb  = |12|
+            restype        = |100|
+            resname        = |ChangedFourForest Oy|
+            reslocation    = |240377.48953756283 6820333.000411826|
+            action         = |1|
+            restelephone   = |0505119984|
+            resremoved     = |A|
+            resremoveddate = |2022-04-12|
+          IMPORTING
+           out_resourceid  = DATA(lv_out_resourceid)
+        ).
+
+        commit_work(  ).
+**Make sure that it contains the data right!
+        cl_abap_unit_assert=>assert_equals( msg = 'Should return the right resourceid' exp = |3087671| act = lv_out_resourceid ).
+** Turn on the commit off
+        toggle_commit_off(  ).
+      CATCH cx_root INTO DATA(lo_exception).
+        fail_exception( io_exception = lo_exception ).
+    ENDTRY.
+  ENDMETHOD.
+
+
+  METHOD saveresource_action_2.
+    TRY.
+** Turn on the commit on
+        toggle_commit_on(  ).
+
+        mo_cut->saveresource(
+          EXPORTING
+            in_resourceid     = |308767|
+            contractors    = VALUE #( )
+            owncontid      = |XFI26845335|
+            resourceid_sb  = |12|
+            restype        = |100|
+            resname        = |ChangedFourForest Oy|
+            reslocation    = |240377.48953756283 6820333.000411826|
+            action         = |2|
+            restelephone   = |0505119984|
+            resremoved     = |A|
+            resremoveddate = |2022-04-12|
+          IMPORTING
+           out_resourceid  = DATA(lv_out_resourceid)
+        ).
+
+        commit_work(  ).
+
+
+**Make sure that it contains the data right!
+        cl_abap_unit_assert=>assert_equals( msg = 'Should return the right resourceid' exp = |308767| act = lv_out_resourceid ).
+** Turn on the commit off
+        toggle_commit_off(  ).
+      CATCH cx_root INTO DATA(lo_exception).
+        fail_exception( io_exception = lo_exception ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD setup.
+    TRY.
+        mo_cut =  CAST zcl_gis_amdp_id916( zcl_gis_amdp_base=>get_instance( iv_id = '916'  ) ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        cl_abap_unit_assert=>fail( 'Set up  has failed' ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD teardown.
+    CLEAR: mo_cut.
+  ENDMETHOD.
+
+  METHOD clear_expectations.
+
+  ENDMETHOD.
+
+  METHOD create_expectations.
+
+  ENDMETHOD.
+
+
+ENDCLASS.

@@ -1,0 +1,104 @@
+*"* use this source file for your ABAP unit test classes
+*/**TESTING THE AMDP METHODS*/
+CLASS ltcl_tester DEFINITION FOR TESTING
+ INHERITING FROM zcl_gis_amdp_base_aunit
+  CREATE PROTECTED
+  RISK LEVEL HARMLESS.
+
+  PUBLIC SECTION.
+    METHODS: create_expectations  REDEFINITION.
+    METHODS: clear_expectations REDEFINITION.
+
+  PROTECTED SECTION.
+
+  PRIVATE SECTION.
+
+    METHODS  get_map_symbol_modif FOR TESTING RAISING cx_static_check.
+    METHODS:setup, teardown.
+    DATA: mo_cut TYPE REF TO zcl_gis_amdp_id1181.
+    DATA: mt_mock_storages  TYPE zprdtid1181_gisget_storag_tab.
+ENDCLASS.
+
+
+CLASS ltcl_tester IMPLEMENTATION.
+
+
+*******************************************************************************
+** Basic Test without DB Manipulation(Insert/Delete)!
+*******************************************************************************
+  METHOD get_map_symbol_modif.
+    TRY.
+
+**From ABAP side how do we get the Timestamp format
+        GET TIME STAMP FIELD DATA(lv_start_timestamp).
+        GET TIME STAMP FIELD DATA(lv_end_timestamp).
+
+        lv_start_timestamp =  |20190708054349|.
+        lv_end_timestamp =  |20190908054349|.
+        DATA(lv_start_time)  = |{ lv_start_timestamp TIMESTAMP =  ISO } | .
+        DATA(lv_end_time)  = |{ lv_end_timestamp TIMESTAMP =  ISO } | .
+
+        mo_cut->get_storage_modifica(
+          EXPORTING
+            in_starttime  = lv_start_time
+            in_endtime    = lv_end_time
+          IMPORTING
+            out_starttime = DATA(lv_actual_out_starttime)
+            out_endtime   = DATA(lv_actual_out_endtime)
+            storages      = DATA(lt_actual_storages)
+        ).
+
+**Make sure that data is returned back
+        DATA(lv_has_records) = check_table_has_records( it_table = lt_actual_storages ).
+        assert_true( act = lv_has_records ).
+
+
+* check match
+        assert_match( exp = lv_actual_out_starttime act = lv_start_time msg = |The Start times should match| ).
+        assert_match( exp = lv_actual_out_endtime act = lv_end_time msg = |The End times should match| ).
+
+**Make sure that it contains the data right!
+       DATA(ls_line) =  VALUE #( mt_mock_storages[ contractid = '609417016' ] ).
+        cl_abap_unit_assert=>assert_table_contains( table = lt_actual_storages line = ls_line msg = | Data should match | ).
+
+*Read for another test
+        ls_line =  VALUE #( mt_mock_storages[ contractid = '89118016' ] ).
+        cl_abap_unit_assert=>assert_table_contains( table = lt_actual_storages line = ls_line msg = | Data should match | ).
+
+
+      CATCH cx_root INTO DATA(lo_exception).
+        fail_exception( io_exception = lo_exception ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD setup.
+    TRY.
+        mo_cut =  CAST zcl_gis_amdp_id1181( zcl_gis_amdp_base=>get_instance( iv_id = '1181'  ) ).
+
+        create_expectations( ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        cl_abap_unit_assert=>fail( 'Set up  has failed' ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD teardown.
+    CLEAR: mo_cut.
+    clear_expectations(  ).
+  ENDMETHOD.
+
+  METHOD clear_expectations.
+      CLEAR: mt_mock_storages.
+  ENDMETHOD.
+
+  METHOD create_expectations.
+    mt_mock_storages = VALUE #(
+    ( contractid = '609417016'  decade = '1'  storagenumber = '1' )
+    ( contractid = '89118016'   decade = '1'  storagenumber = '1' )
+    ( contractid = '844118008'   decade = '1' storagenumber = '1' )
+
+    ).
+  ENDMETHOD.
+
+
+ENDCLASS.

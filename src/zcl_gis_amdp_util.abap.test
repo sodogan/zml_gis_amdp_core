@@ -1,0 +1,162 @@
+*"* use this source file for your ABAP unit test classes
+*"* use this source file for your ABAP unit test classes
+*/**TESTING THE AMDP METHODS*/
+CLASS ltcl_tester DEFINITION FOR TESTING
+ INHERITING FROM zcl_gis_amdp_base_aunit
+  RISK LEVEL HARMLESS.
+
+  PUBLIC SECTION.
+    METHODS: create_expectations  REDEFINITION.
+    METHODS: clear_expectations REDEFINITION.
+
+  PROTECTED SECTION.
+
+  PRIVATE SECTION.
+    METHODS  geoxml_to_geoshape FOR TESTING RAISING cx_static_check.
+    METHODS: geoshape_to_xml_for_polygon FOR TESTING RAISING cx_static_check.
+    METHODS:setup, teardown.
+ENDCLASS.
+
+
+CLASS ltcl_tester IMPLEMENTATION.
+
+
+
+  METHOD geoxml_to_geoshape.
+
+    DATA: lv_poslist TYPE zgis_amdp_poslist,
+          lv_gtype   TYPE zgis_amdp_gtype,
+          lv_out_geom type geom_ewkb
+          .
+
+
+* LineString
+    lv_gtype = 'lSP'.
+    lv_poslist = '240377.48953756283 6820333.000411826 240330.48952423738 6820336.50041247 240293.35577624541 6820296.0857868055 240315.12026900068 6820299.269669891 240377.48953756283 6820333.000411826'.
+
+**Call the utility
+    TRY.
+        zcl_gis_amdp_util=>geoxml_to_geoshape(
+          EXPORTING
+            poslist = lv_poslist
+            gtype   = lv_gtype
+          IMPORTING
+            st_text = DATA(st_text)
+            geom    = lv_out_geom
+        ).
+
+** Check that the st_text contains Linestring
+        assert_cs(
+          EXPORTING
+            msg = 'Should contain LineString'
+            act = st_text
+            exp = |LineString|
+*           quit = method
+        ).
+
+*Point
+    zcl_gis_amdp_util=>geoxml_to_geoshape(
+          EXPORTING
+            poslist = '240377.48953756283 6820333.000411826'
+            gtype   = 'pP'
+          IMPORTING
+            st_text = st_text
+            geom    = lv_out_geom
+        ).
+
+      assert_true( act = xsdbool( st_text is not initial ) ).
+
+
+** Check that the st_text contains Point
+        assert_cs(
+          EXPORTING
+            msg = 'Should contain Point'
+            act = st_text
+            exp = |Point|
+*           quit = method
+        ).
+
+*Polygon
+    zcl_gis_amdp_util=>geoxml_to_geoshape(
+          EXPORTING
+            poslist = '0.5 0.5 0.5 1.5 1.5 1.5 1.5 0.5 0.5 0.5'
+            gtype   = 'PGE' "or PGI
+          IMPORTING
+            st_text = st_text
+            geom    = lv_out_geom
+        ).
+
+      assert_true( act = xsdbool( st_text is not initial ) ).
+
+** Check that the st_text contains Polygon
+        assert_cs(
+          EXPORTING
+            msg = 'Should contain Polygon'
+            act = st_text
+            exp = |Polygon|
+*           quit = method
+        ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        fail_test( |Exception: { lo_exception->get_text(  ) }  | ).
+    ENDTRY.
+
+  ENDMETHOD.
+
+
+
+  METHOD setup.
+
+  ENDMETHOD.
+
+  METHOD teardown.
+
+  ENDMETHOD.
+
+  METHOD clear_expectations.
+
+  ENDMETHOD.
+
+  METHOD create_expectations.
+
+  ENDMETHOD.
+
+  METHOD geoshape_to_xml_for_polygon.
+**Call the utility to transform the HANA shape to XML
+* Testing for type Polygon- variant_name is PGE
+    TRY.
+        SELECT single geoloc
+        FROM
+        zfind_actualgeometry_tf( p_actualgeometryid = 5 )
+        INTO @DATA(lv_shape)
+        .
+          IF sy-subrc NE 0.
+            RAISE EXCEPTION TYPE zcx_unexpected_exception
+              EXPORTING
+                iv_parameter_name = |p_actualgeometryid|.
+          ENDIF.
+
+**Pass the St_GEom type which
+          zcl_gis_amdp_util=>geoshape_to_xml(
+            EXPORTING
+              shape   = lv_shape
+            IMPORTING
+              st_text = DATA(lv_transformed_text)
+          ).
+**Make sure that it contains variant name as PGE and data
+        assert_cs(
+          EXPORTING
+            msg  = |It should contain the variant name as PGE|
+            act  = lv_transformed_text
+            exp  = 'PGE'
+*            quit = method
+        ).
+        DATA(lv_length) = strlen( lv_transformed_text ).
+        assert_true( act = xsdbool(  lv_length > 1000 )   ).
+** Check that the st_text contains Linestring
+        CATCH cx_root INTO DATA(lo_exception).
+          fail_test( |Exception: { lo_exception->get_text(  ) }  | ).
+      ENDTRY.
+    ENDMETHOD.
+
+ENDCLASS.

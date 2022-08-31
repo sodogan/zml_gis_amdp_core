@@ -1,0 +1,194 @@
+*"* use this source file for your ABAP unit test classes
+*/**TESTING THE AMDP METHODS*/
+CLASS ltcl_tester DEFINITION FOR TESTING
+ INHERITING FROM zcl_gis_amdp_base_aunit
+  RISK LEVEL HARMLESS DURATION LONG.
+
+  PUBLIC SECTION.
+    METHODS: create_expectations  REDEFINITION.
+    METHODS: clear_expectations REDEFINITION.
+
+  PROTECTED SECTION.
+
+
+  PRIVATE SECTION.
+    METHODS  getworkingsiteopera_silv FOR TESTING RAISING cx_static_check.
+    METHODS  getworkingsiteopera_harv FOR TESTING RAISING cx_static_check.
+    METHODS  getworkingsiteopera_harv_def FOR TESTING RAISING cx_static_check.
+    METHODS:setup, teardown.
+    DATA: mo_cut TYPE REF TO zcl_gis_amdp_id744.
+ENDCLASS.
+
+
+CLASS ltcl_tester IMPLEMENTATION.
+
+  METHOD getworkingsiteopera_harv.
+  DATA: lt_actual_stands  type zdt_id744_wsogisrespons_tab.
+*   INSERT VALUE zmgkotka_harvesting_s( contractid = |1061170031| harvesting_blockid = 67799  blocknumber = 1 ) INTO TABLE mt_mock_harvest_block_table.
+
+    TRY.
+        mo_cut->getworkingsiteoperational_h(
+          EXPORTING
+            contractid      = |698217062|
+            blocknumber     = 1
+            decade          = '1'
+            logyonly        = 'X'
+            sampleplotlevel = 1
+          IMPORTING
+            response_stand  = lt_actual_stands
+        ).
+
+        DATA(ls_line) = VALUE zdt_id744_wsogisresponse_se( area = ''
+                                                     blocknumber = '1'
+                                                     contractid = 6982170621
+                                                     developmentclass = ''
+                                                     fertilityclass = ''
+                                                     forestplanstandid = ''
+                                                     geometry = ''
+                                                     labelposition = ''
+                                                     soiltype = ''
+                                                     standnumber = ''
+                                                     standtreescuttingvolume = ''
+                                                     logy = |0000000300|
+                                                     ).
+**Make sure that data is returned back
+        DATA(lv_has_records) = check_table_has_records( it_table = lt_actual_stands ).
+        assert_true( act = lv_has_records ).
+
+
+**Make sure that it contains the data right!
+        cl_abap_unit_assert=>assert_table_contains( table = lt_actual_stands line = ls_line msg = | Should pass| ).
+
+
+    CATCH cx_root INTO DATA(lo_exception).
+        fail_test( |Exception: { lo_exception->get_text(  ) }  | ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD getworkingsiteopera_harv_def.
+ DATA: lt_actual_stands  type zdt_id744_wsogisrespons_tab.
+*   INSERT VALUE zmgkotka_harvesting_s( contractid = |1061170031| harvesting_blockid = 67799  blocknumber = 1 ) INTO TABLE mt_mock_harvest_block_table.
+
+    TRY.
+**Test with  default    logyonly        = 'X'
+        mo_cut->getworkingsiteoperational_h(
+          EXPORTING
+            contractid      = |6982170621|
+            blocknumber     = 1
+            decade          = ''
+            logyonly        = ''
+            sampleplotlevel = 2
+          IMPORTING
+            response_stand  = lt_actual_stands
+        ).
+        DATA(lv_expected_geometry) = |<GEOMETRY>429767.338 7416826.728 429778.076 7416810.362 429780.076 7416805.862 429782.076 7416796.861 429782.076 7416794.361 429779.576 7416785.861| &&
+                      | 429779.076 7416783.361 429777.077 7416766.865 429778.074| &&
+                      | 7416764.365 429788.575 7416755.36 429799.574 7416741.36 429800.076 7416735.858 429801.932 7416720.781 429801.947 7416720.765 429801.968 7416720.772| &&
+                      | 429812.693 7416734.715 429816.999 7416759.463 429821.303 7416790.66 429820.227 7416817.558 429820.227 7416833.694 429822.378| &&
+                      | 7416839.071 429822.379 7416848.756 429823.453 7416851.983 429825.603 7416854.134 429826.681 7416857.362 429832.057 7416861.665| &&
+                      | 429839.761 7416878.046 429839.749 7416878.074 429784.997 7416894.362 429784.973 7416894.351 429772.096 7416866.188| &&
+                      | 429769.607 7416850.302 429768.934 7416836.323 429767.335 7416826.743| &&
+                      | 429767.338 7416826.728</GEOMETRY><VARIANT_NAME>PGE</VARIANT_NAME>|.
+
+        DATA(lv_expected_label_position) = |<GEOMETRY>429799.65479 7416821.89319</GEOMETRY><VARIANT_NAME>pP</VARIANT_NAME>|.
+        DATA(ls_line) = VALUE zdt_id744_wsogisresponse_se( area = ''
+                                                     blocknumber = '1'
+                                                     contractid = 6982170621
+                                                     developmentclass = 'T1'
+                                                     fertilityclass = '4'
+                                                     forestplanstandid = '21865829'
+                                                     geometry = lv_expected_geometry
+                                                     labelposition = lv_expected_label_position
+                                                     soiltype = '10'
+                                                     standnumber = '013'
+                                                     standtreescuttingvolume = ''
+                                                     logy = ''
+                                                     ).
+
+**Make sure that data is returned back
+        DATA(lv_has_records) = check_table_has_records( it_table = lt_actual_stands ).
+        assert_true( act = lv_has_records ).
+
+
+        DATA(lv_contract_exists) = xsdbool( line_exists( lt_actual_stands[ contractid =  6982170621  ] )  ).
+
+        DATA(lv_success) = cond abap_bool(  when lv_contract_exists NE abap_true then
+                                            fail_test( iv_msg = |Should return the right contract number| ) ).
+
+
+        DATA(lv_actual_geometry) = VALUE #( lt_actual_stands[ contractid =  6982170621  ]-geometry  OPTIONAL ).
+        assert_true( act = xsdbool( lv_actual_geometry EQ lv_expected_geometry ) ).
+**Make sure that it contains the data right!
+*        cl_abap_unit_assert=>assert_table_contains( table = lt_actual_stands line = ls_line msg = | Should pass| ).
+
+
+      CATCH cx_root INTO DATA(lo_exception).
+        DATA(lv_error_text) = lo_exception->get_text(  ).
+        fail_test( iv_msg = lv_error_text ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD getworkingsiteopera_silv.
+  DATA: lt_actual_stands  type zdt_id744_wsogisrespons_tab.
+    TRY.
+        mo_cut->getworkingsiteoperational_s(
+          EXPORTING
+            contractid      = |698217062|
+            blocknumber     = 1
+            decade          = '1'
+            logyonly        = 'X'
+            sampleplotlevel = 1
+          IMPORTING
+            response_stand  = lt_actual_stands
+        ).
+
+        DATA(ls_line) = VALUE zdt_id744_wsogisresponse_se( area = ''
+                                                     blocknumber = '1'
+                                                     contractid = 6982170621
+                                                     developmentclass = ''
+                                                     fertilityclass = ''
+                                                     forestplanstandid = ''
+                                                     geometry = ''
+                                                     labelposition = ''
+                                                     soiltype = ''
+                                                     standnumber = ''
+                                                     standtreescuttingvolume = ''
+                                                     logy = ''
+                                                     ).
+
+
+**Make sure that data is returned back
+        DATA(lv_has_records) = check_table_has_records( it_table = lt_actual_stands ).
+        assert_true( act = lv_has_records ).
+
+
+**Make sure that it contains the data right!
+        cl_abap_unit_assert=>assert_table_contains( table = lt_actual_stands line = ls_line msg = | Should pass| ).
+
+     CATCH cx_root INTO DATA(lo_exception).
+        fail_test( |Exception: { lo_exception->get_text(  ) }  | ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD setup.
+    TRY.
+        mo_cut =  CAST zcl_gis_amdp_id744( zcl_gis_amdp_base=>get_instance( iv_id = '744'  ) ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        cl_abap_unit_assert=>fail( 'Set up  has failed' ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD teardown.
+    CLEAR: mo_cut.
+  ENDMETHOD.
+
+  METHOD clear_expectations.
+
+  ENDMETHOD.
+
+  METHOD create_expectations.
+
+  ENDMETHOD.
+
+ENDCLASS.

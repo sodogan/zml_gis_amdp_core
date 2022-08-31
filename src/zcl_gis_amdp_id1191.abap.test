@@ -1,0 +1,246 @@
+*"* use this source file for your ABAP unit test classes
+*/**TESTING THE AMDP METHODS*/
+CLASS ltcl_tester DEFINITION FOR TESTING
+ INHERITING FROM zcl_gis_amdp_base_aunit
+  RISK LEVEL HARMLESS.
+
+  PUBLIC SECTION.
+    CONSTANTS :  GC_log_object    TYPE balhdr-object VALUE 'Z1191_WS_STATUS'.
+    METHODS: zif_gis_amdp_expectations_unit~create_expectations REDEFINITION,
+      zif_gis_amdp_expectations_unit~clear_expectations REDEFINITION.
+
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+    METHODS  test_call_ID1191 FOR TESTING RAISING cx_static_check.
+    METHODS  test_call_ID1191_fail FOR TESTING RAISING cx_static_check.
+    METHODS  gis_save_status_send FOR TESTING RAISING cx_static_check.
+    METHODS  gis_save_status_send_fail FOR TESTING RAISING cx_static_check.
+
+    METHODS:setup, teardown.
+    class-METHODS: class_setup,class_teardown.
+    DATA: mo_cut TYPE REF TO zcl_gis_amdp_id1191.
+    Class-DATA: mref_log_wrapper        TYPE REF TO zcl_application_log_wrapper.
+ENDCLASS.
+
+
+CLASS ltcl_tester IMPLEMENTATION.
+
+
+  METHOD test_call_id1191.
+    DATA:ls_id1191_request       TYPE zprmt_id1191_gissave_status_r1,
+         lt_in_ostosopimukset_tt TYPE zprdtid1191_gissave_stat_tab2,
+         lt_in_lohkot_tt         TYPE zprdtid1191_gissave_stat_tab8,
+         lt_in_varastot_tt       TYPE zprdtid1191_gissave_statu_tab,
+         lt_in_mhtilaukset_tt    TYPE zprdtid1191_gissave_stat_tab4,
+         lt_in_mhlohkot_tt       TYPE zprdtid1191_gissave_stat_tab6
+         .
+
+
+    lt_in_ostosopimukset_tt = VALUE #( ( ostosopimus = '2' ostosopvk = '1' statuspvm = |{ sy-datum DATE = ISO }| ) ).
+    lt_in_lohkot_tt         = VALUE #( ( ostosopimus = '1' ostosopvk = '1' lohkonro = '1' status = 'TEST' statuspvm = |{ sy-datum DATE = ISO }| ) ).
+    lt_in_varastot_tt       = VALUE #( ( ostosopimus = '3' ostosopvk = '1' sopnovarpa = '01' statuspvm = |{ sy-datum DATE = ISO }| ) ).
+    lt_in_mhtilaukset_tt    = VALUE #( ( mhtilaus = '4' statuspvm = |{ sy-datum DATE = ISO }| ) ).
+    lt_in_mhlohkot_tt       = VALUE #( ( mhtilaus = '5' lohkonro = '1' status = 'TEST' statuspvm = |{ sy-datum DATE = ISO }| ) ).
+
+    ls_id1191_request-mt_id1191_gissave_status_reque-ostosopimukset-ostosopimus =  CORRESPONDING #(  lt_in_ostosopimukset_tt  ).
+
+    ls_id1191_request-mt_id1191_gissave_status_reque-lohkot-lohko = CORRESPONDING #( lt_in_lohkot_tt  ).
+    ls_id1191_request-mt_id1191_gissave_status_reque-varastot-varasto  = CORRESPONDING #( lt_in_varastot_tt  ).
+    ls_id1191_request-mt_id1191_gissave_status_reque-mhtilaukset-mhtilaus  = CORRESPONDING #( lt_in_mhtilaukset_tt  ).
+    ls_id1191_request-mt_id1191_gissave_status_reque-mhlohkot-lohko = CORRESPONDING #( lt_in_mhlohkot_tt  ).
+
+
+
+** Turn on the commit on
+    toggle_commit_on(  ).
+
+    mo_cut->call_id1191(
+      EXPORTING
+        is_id1191_request = ls_id1191_request
+        iref_log_wrapper  = mref_log_wrapper
+      IMPORTING
+        ev_success        = DATA(lv_success)
+        ev_error_msg      = DATA(lv_error_msg)
+    ).
+
+*This will commit the changes to Database, just be careful!
+    commit_work( ).
+
+** Turn on the commit off
+    toggle_commit_on(  ).
+
+**Make sure that theres is no exception thrown and that proves that it was successfull
+    assert_true( act = xsdbool( lv_success = abap_true ) ).
+
+
+  ENDMETHOD.
+
+  METHOD test_call_id1191_fail.
+    DATA:ls_id1191_request       TYPE zprmt_id1191_gissave_status_r1,
+         lt_in_ostosopimukset_tt TYPE zprdtid1191_gissave_stat_tab2,
+         lt_in_lohkot_tt         TYPE zprdtid1191_gissave_stat_tab8,
+         lt_in_varastot_tt       TYPE zprdtid1191_gissave_statu_tab,
+         lt_in_mhtilaukset_tt    TYPE zprdtid1191_gissave_stat_tab4,
+         lt_in_mhlohkot_tt       TYPE zprdtid1191_gissave_stat_tab6
+         .
+
+
+*    lt_in_ostosopimukset_tt = VALUE #( ( ostosopimus = '2' ostosopvk = '1' statuspvm = |{ sy-datum }| ) ).
+    lt_in_ostosopimukset_tt = VALUE #(  ).
+    lt_in_lohkot_tt         = VALUE #( ( ostosopimus = '1' ostosopvk = '1' lohkonro = '1' status = 'TEST' statuspvm = |{ sy-datum  }| ) ).
+    lt_in_varastot_tt       = VALUE #( ( ostosopimus = '3' ostosopvk = '1' sopnovarpa = '01' statuspvm = |{ sy-datum DATE = ISO }| ) ).
+    lt_in_mhtilaukset_tt    = VALUE #( ( mhtilaus = '4' statuspvm = |{ sy-datum DATE = ISO }| ) ).
+    lt_in_mhlohkot_tt       = VALUE #( ( mhtilaus = '5' lohkonro = '1' status = 'TEST' statuspvm = |{ sy-datum DATE = ISO }| ) ).
+
+    ls_id1191_request-mt_id1191_gissave_status_reque-ostosopimukset-ostosopimus =  CORRESPONDING #(  lt_in_ostosopimukset_tt  ).
+
+    ls_id1191_request-mt_id1191_gissave_status_reque-lohkot-lohko = CORRESPONDING #( lt_in_lohkot_tt  ).
+    ls_id1191_request-mt_id1191_gissave_status_reque-varastot-varasto  = CORRESPONDING #( lt_in_varastot_tt  ).
+    ls_id1191_request-mt_id1191_gissave_status_reque-mhtilaukset-mhtilaus  = CORRESPONDING #( lt_in_mhtilaukset_tt  ).
+    ls_id1191_request-mt_id1191_gissave_status_reque-mhlohkot-lohko = CORRESPONDING #( lt_in_mhlohkot_tt  ).
+
+
+
+** Turn on the commit on
+    toggle_commit_on(  ).
+
+    mo_cut->call_id1191(
+      EXPORTING
+        is_id1191_request = ls_id1191_request
+        iref_log_wrapper  = mref_log_wrapper
+      IMPORTING
+        ev_success        = DATA(lv_success)
+        ev_error_msg      = DATA(lv_error_msg)
+    ).
+
+*This will commit the changes to Database, just be careful!
+    commit_work( ).
+
+
+**Make sure that theres is no exception thrown and that proves that it was successfull
+    assert_true( act = xsdbool( lv_success = abap_false ) ).
+    assert_true( act = xsdbool( strlen( lv_error_msg ) > 10 ) ).
+
+** Turn on the commit on
+    toggle_commit_off(  ).
+
+  ENDMETHOD.
+
+*****************************************************************************
+* if the test contains any insert ,update or delete operations Be aware!
+* Commit work will commit the changes
+* Otherwise if the test does not throw exceptions, we can assume
+*****************************************************************************
+  METHOD gis_save_status_send.
+    TRY.
+        TRY.
+** Turn on the commit on
+            toggle_commit_on(  ).
+            mo_cut->gis_save_status_send(
+              EXPORTING
+                in_ostosopimukset_tt = VALUE #( ( ostosopimus = '2' ostosopvk = '1' statuspvm = |{ sy-datum DATE = ISO }| ) )
+                in_lohkot_tt         = VALUE #( ( ostosopimus = '1' ostosopvk = '1' lohkonro = '1' status = 'TEST' statuspvm = |{ sy-datum DATE = ISO }| ) )
+                in_varastot_tt       = VALUE #( ( ostosopimus = '3' ostosopvk = '1' sopnovarpa = '01' statuspvm = |{ sy-datum DATE = ISO }| ) )
+                in_mhtilaukset_tt    = VALUE #( ( mhtilaus = '4' statuspvm = |{ sy-datum DATE = ISO }| ) )
+                in_mhlohkot_tt       = VALUE #( ( mhtilaus = '5' lohkonro = '1' status = 'TEST' statuspvm = |{ sy-datum DATE = ISO }| ) )
+            ).
+
+
+*This will commit the changes to Database, just be careful!
+            commit_work( ).
+
+**Make sure that it is a pass if it reaches here!
+            pass_test( iv_msg = | This is a pass and expected to reach here, otherwise fail  | ).
+
+          CLEANUP.
+            toggle_commit_off(  ).
+        ENDTRY.
+
+      CATCH cx_root INTO DATA(lo_exception).
+        ROLLBACK WORK.
+* if exception thrown its a failure as data is valid
+        fail_test( |Exception: { lo_exception->get_text(  ) }  | ).
+    ENDTRY.
+  ENDMETHOD.
+
+*****************************************************************************
+* This test should fail as the date statusvpm is provided in the wrong format!
+* the date should be provided like 2020-02-03 format
+* if the test does not throw exceptions, its a failure
+*****************************************************************************
+  METHOD gis_save_status_send_fail.
+    TRY.
+
+        TRY.
+** Turn on the commit on
+            toggle_commit_on(  ).
+            mo_cut->gis_save_status_send(
+              EXPORTING
+                in_ostosopimukset_tt = VALUE #( ( ostosopimus = '2' ostosopvk = '1' statuspvm = |{ sy-datum }| ) )
+                in_lohkot_tt         = VALUE #( ( ostosopimus = '1' ostosopvk = '1' lohkonro = '1' status = 'TEST' statuspvm = |{ sy-datum DATE = ISO }| ) )
+                in_varastot_tt       = VALUE #( ( ostosopimus = '3' ostosopvk = '1' sopnovarpa = '01' statuspvm = |{ sy-datum DATE = ISO }| ) )
+                in_mhtilaukset_tt    = VALUE #( ( mhtilaus = '4' statuspvm = |{ sy-datum DATE = ISO }| ) )
+                in_mhlohkot_tt       = VALUE #( ( mhtilaus = '5' lohkonro = '1' status = 'TEST' statuspvm = |{ sy-datum DATE = ISO }| ) )
+            ).
+
+*This will commit the changes to Database, just be careful!
+            commit_work( ).
+
+**Make sure that it fails the test when it reaches here!
+            fail_test( | Should never reach here, otherwise fail  | ).
+
+
+**NOT Applicable Here-Make sure that it contains the data right!
+*        DATA(ls_line) =  VALUE #( mt_mock_stands_table[ stand_number = 22370496 ] ).
+*       cl_abap_unit_assert=>assert_table_contains( table = lt_actual_stands line = ls_line msg = | Should pass| ).
+
+          CLEANUP.
+            toggle_commit_off(  ).
+
+        ENDTRY.
+      CATCH cx_root INTO DATA(lo_exception).
+        ROLLBACK WORK.
+* Exception is expected
+        pass_test( iv_msg = |This test should throw exception and thats a pass for the test| ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD class_setup.
+** create the logger object first!
+    mref_log_wrapper = NEW #( object = GC_log_object ).
+  ENDMETHOD.
+
+  METHOD class_teardown.
+  clear: mref_log_wrapper.
+  ENDMETHOD.
+
+  METHOD setup.
+    TRY.
+        mo_cut =  CAST zcl_gis_amdp_id1191( zcl_gis_amdp_base=>get_instance( iv_id = '1191'  ) ).
+
+      CATCH cx_root INTO DATA(lo_exception).
+        cl_abap_unit_assert=>fail( 'Set up  has failed' ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD teardown.
+    CLEAR: mo_cut.
+  ENDMETHOD.
+
+
+
+
+  METHOD zif_gis_amdp_expectations_unit~clear_expectations.
+**Not needed for this case
+  ENDMETHOD.
+
+  METHOD zif_gis_amdp_expectations_unit~create_expectations.
+*Not needed for this case
+  ENDMETHOD.
+
+
+
+
+
+
+ENDCLASS.
